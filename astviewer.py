@@ -2,7 +2,6 @@
 """ 
    Program that shows the program on the right and its abstract syntax tree (ast) on the left.
 """
-#01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 from __future__ import print_function
 
 import sys, argparse, os, logging, types, ast
@@ -11,6 +10,7 @@ from PySide import QtCore, QtGui
 
 logger = logging.getLogger(__name__)
 
+DEBUGGING = True
 
 PROGRAM_NAME = 'astviewer'
 PROGRAM_VERSION = '0.0.1'
@@ -27,7 +27,8 @@ COL_CLASS = 2
 COL_VALUE = 3
 COL_POS   = 4
 
-# The main window inherits from a Qt class, therefore it has many ancestors public methods and attributes.
+# The main window inherits from a Qt class, therefore it has many 
+# ancestors public methods and attributes.
 # pylint: disable=R0901, R0902, R0904 
 
 class AstViewer(QtGui.QMainWindow):
@@ -96,6 +97,10 @@ class AstViewer(QtGui.QMainWindow):
         quit_action = file_menu.addAction("E&xit", self.quit_application)
         quit_action.setShortcut("Ctrl+Q")
         
+        if DEBUGGING is True:
+            file_menu.addSeparator()
+            file_menu.addAction("&Test", self.my_test, "Ctrl+T")
+        
         view_menu = self.menuBar().addMenu("&View")
         view_menu.addAction(self.col_field_action)        
         view_menu.addAction(self.col_class_action)        
@@ -137,7 +142,7 @@ class AstViewer(QtGui.QMainWindow):
         font.setFixedPitch(True)
         font.setPointSize(12)
 
-        self.editor = QtGui.QTextEdit()
+        self.editor = QtGui.QPlainTextEdit()
         self.editor.setReadOnly(True)
         self.editor.setFont(font)
         self.editor.setWordWrapMode(QtGui.QTextOption.NoWrap)
@@ -151,7 +156,7 @@ class AstViewer(QtGui.QMainWindow):
         central_splitter.setStretchFactor(1, 70)
         
         # Connect signals
-        self.ast_tree.currentItemChanged.connect(self.update_syntax_highlighting)
+        self.ast_tree.currentItemChanged.connect(self.highlight_node)
         
 
     # End of setup_methods
@@ -242,12 +247,34 @@ class AstViewer(QtGui.QMainWindow):
         _ = add_node(syntax_tree, self.ast_tree, '"{}"'.format(self._file_name))
         self.ast_tree.expandToDepth(1)
         
-            
-
-    def update_syntax_highlighting(self):
-        """ Updates and draws the plot with the new data
+ 
+    @QtCore.Slot(QtGui.QTreeWidgetItem, QtGui.QTreeWidgetItem)
+    def highlight_node(self, current_item, _previous_item):
+        """ Highlights the node if it has line:col information.
         """
-        logger.debug("update_syntax_highlighting")
+        position_str = current_item.text(COL_POS)
+        try:
+            line_str, col_str = position_str.split(":")
+        except ValueError:    
+            logger.warn("No position information from {!r}".format(position_str))
+            return
+        
+        line_nr = int(line_str)
+        col_nr = int(col_str)
+        logger.debug("Highlighting {:d} : {:d}".format(line_nr, col_nr))
+        self.goto_line(line_nr)
+        
+
+    def goto_line(self, line_nr):
+        """ Moves the document cursor to line_nr, col_nr
+        """
+        # findBlockByLineNumber seems to be 0-based.
+        # http://www.qtcentre.org/threads/52574-How-do-I-set-a-QTextEdit-to-a-specific-line-by-line-number
+        text_block = self.editor.document().findBlockByLineNumber(line_nr - 1)
+        text_cursor = QtGui.QTextCursor(text_block)
+        text_cursor.select(QtGui.QTextCursor.LineUnderCursor)
+        self.editor.setTextCursor(text_cursor)
+        
         
 
     @QtCore.Slot(int)
@@ -270,6 +297,10 @@ class AstViewer(QtGui.QMainWindow):
         """ Shows or hides the line:col column"""
         self.ast_tree.setColumnHidden(COL_POS, not checked)                
 
+
+    def my_test(self):
+        """ Function for testing """
+        self.goto_line(1)
 
     def about(self):
         """ Shows the about message window. """
@@ -308,7 +339,8 @@ def main():
     logger.info('Started {}'.format(PROGRAM_NAME))
     
     ast_viewer = AstViewer(file_name = args.file_name)
-    ast_viewer.resize(1400, 800)
+    #ast_viewer.resize(1400, 800)
+    ast_viewer.resize(1000, 600)
     ast_viewer.show()
     
     exit_code = app.exec_()
