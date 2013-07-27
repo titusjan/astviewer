@@ -2,7 +2,7 @@
 """ 
    Program that shows the program on the right and its abstract syntax tree (ast) on the left.
 """
-
+#01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 from __future__ import print_function
 
 import sys, argparse, os, logging, types, ast
@@ -19,6 +19,13 @@ IMAGE_DIRECTORY = PROGRAM_DIRECTORY + '/images/'
 ABOUT_MESSAGE = u"""%(prog)s version %(version)s
 """ % {"prog": PROGRAM_NAME, "version": PROGRAM_VERSION}
 
+
+# Tree column indices
+COL_NODE = 0
+COL_FIELD = 1
+COL_CLASS = 2
+COL_VALUE = 3
+COL_POS   = 4
 
 # The main window inherits from a Qt class, therefore it has many ancestors public methods and attributes.
 # pylint: disable=R0901, R0902, R0904 
@@ -45,6 +52,9 @@ class AstViewer(QtGui.QMainWindow):
         self.setWindowTitle(PROGRAM_NAME)
         
         # Update views
+        self.col_field_action.setChecked(False)
+        self.col_class_action.setChecked(False)
+        self.col_value_action.setChecked(False)
         self.open_file(file_name = file_name)
 
 
@@ -52,24 +62,29 @@ class AstViewer(QtGui.QMainWindow):
         """ Creates the MainWindow actions.
         """  
         self.col_field_action = QtGui.QAction(
-            "Show Field Column", self, checkable=True,
+            "Show Field Column", self, checkable=True, checked=True,
             statusTip = "Shows or hides the Field column")
         self.col_field_action.setShortcut("Ctrl+1")
         self.col_field_action.toggled.connect(self.show_field_column)
         
         self.col_class_action = QtGui.QAction(
-            "Show Class Column", self, checkable=True,
+            "Show Class Column", self, checkable=True, checked=True,
             statusTip = "Shows or hides the Class column")
         self.col_class_action.setShortcut("Ctrl+2")
         self.col_class_action.toggled.connect(self.show_class_column)
         
         self.col_value_action = QtGui.QAction(
-            "Show Value Column", self, checkable=True,
+            "Show Value Column", self, checkable=True, checked=True,
             statusTip = "Shows or hides the Value column")
         self.col_value_action.setShortcut("Ctrl+3")
         self.col_value_action.toggled.connect(self.show_value_column)
         
-                      
+        self.col_pos_action = QtGui.QAction(
+            "Show Line:Col Column", self, checkable=True, checked=True,
+            statusTip = "Shows or hides the 'Line : Col' column")
+        self.col_pos_action.setShortcut("Ctrl+4")
+        self.col_pos_action.toggled.connect(self.show_pos_column)
+                              
     def _setup_menu(self):
         """ Sets up the main menu.
         """
@@ -85,18 +100,16 @@ class AstViewer(QtGui.QMainWindow):
         view_menu.addAction(self.col_field_action)        
         view_menu.addAction(self.col_class_action)        
         view_menu.addAction(self.col_value_action)        
+        view_menu.addAction(self.col_pos_action)        
         
         self.menuBar().addSeparator()
         help_menu = self.menuBar().addMenu("&Help")
         help_menu.addAction('&About', self.about)
 
-        
-        
 
     def _setup_views(self):
         """ Creates the UI widgets. 
         """
-        #central_splitter = QtGui.QWidget()
         central_splitter = QtGui.QSplitter(self, orientation = QtCore.Qt.Horizontal)
         self.setCentralWidget(central_splitter)
         central_layout = QtGui.QHBoxLayout()
@@ -104,19 +117,18 @@ class AstViewer(QtGui.QMainWindow):
         
         # Tree widget
         self.ast_tree = QtGui.QTreeWidget()
-        
         self.ast_tree.setColumnCount(2)
-
-        self.ast_tree.setHeaderLabels(["Node", "Field", "Class", "Value"])
-        self.ast_tree.header().resizeSection(0, 250)
-        self.ast_tree.header().resizeSection(1, 80)
-        self.ast_tree.header().resizeSection(2, 80)
-        self.ast_tree.header().resizeSection(3, 80)
+        
+        self.ast_tree.setHeaderLabels(["Node", "Field", "Class", "Value", "Line : Col"])
+        self.ast_tree.header().resizeSection(COL_NODE, 250)
+        self.ast_tree.header().resizeSection(COL_FIELD, 80)
+        self.ast_tree.header().resizeSection(COL_CLASS, 80)
+        self.ast_tree.header().resizeSection(COL_VALUE, 80)
+        self.ast_tree.header().resizeSection(COL_POS, 80)
         
         # Don't stretch last column, it doesn't play nice when columns are 
         # hidden and then shown again. 
         self.ast_tree.header().setStretchLastSection(False) 
-        
         central_layout.addWidget(self.ast_tree)
 
         # Editor widget
@@ -131,12 +143,12 @@ class AstViewer(QtGui.QMainWindow):
         self.editor.setWordWrapMode(QtGui.QTextOption.NoWrap)
         central_layout.addWidget(self.editor)
         
-        
         # Splitter parameters
         central_splitter.setCollapsible(0, False)
         central_splitter.setCollapsible(1, False)
-        central_splitter.setStretchFactor(0, 30)
-        central_splitter.setStretchFactor(1, 30)
+        central_splitter.setSizes([250 + 80 + 30, 700])
+        central_splitter.setStretchFactor(0, 0)
+        central_splitter.setStretchFactor(1, 70)
         
         # Connect signals
         self.ast_tree.currentItemChanged.connect(self.update_syntax_highlighting)
@@ -146,18 +158,20 @@ class AstViewer(QtGui.QMainWindow):
     # pylint: enable=W0201
     
     def new_file(self):
+        """ Clears the widgets """
         self._file_name = ""
         self._source_code = ""
         self.editor.clear()
-        
         self._fill_ast_tree_widget()
         
 
     def open_file(self, file_name=None):
+        """ Opens a new file. Show the open file dialog if file_name is None.
+        """
         if not file_name:
-            file_name, _ = QtGui.QFileDialog.getOpenFileName(self, "Open File", '', "Python Files (*.py)")
-
-        if file_name != '':
+            file_name, _ = QtGui.QFileDialog.getOpenFileName(self, "Open File", 
+                                                             '', "Python Files (*.py)")
+        if file_name:
             self._file_name = file_name 
             logger.debug("Opening {!r}".format(file_name))
             
@@ -210,10 +224,16 @@ class AstViewer(QtGui.QMainWindow):
                 value_str = repr(ast_node)
                 node_str = "{} = {}".format(field_label, value_str)
                 
-            node_item.setText(0, node_str)
-            node_item.setText(1, field_label)
-            node_item.setText(2, class_name(ast_node))
-            node_item.setText(3, value_str)
+            try:
+                position_str = "{:d} : {:d}".format(ast_node.lineno, ast_node.col_offset)
+            except AttributeError:
+                position_str = ""
+                
+            node_item.setText(COL_NODE, node_str)
+            node_item.setText(COL_FIELD, field_label)
+            node_item.setText(COL_CLASS, class_name(ast_node))
+            node_item.setText(COL_VALUE, value_str)
+            node_item.setText(COL_POS, position_str)
             
             return node_item
             
@@ -233,17 +253,22 @@ class AstViewer(QtGui.QMainWindow):
     @QtCore.Slot(int)
     def show_field_column(self, checked):
         """ Shows or hides the field column"""
-        self.ast_tree.setColumnHidden(1, not checked)                
+        self.ast_tree.setColumnHidden(COL_FIELD, not checked)                
 
     @QtCore.Slot(int)
     def show_class_column(self, checked):
         """ Shows or hides the class column"""
-        self.ast_tree.setColumnHidden(2, not checked)                
+        self.ast_tree.setColumnHidden(COL_CLASS, not checked)                
 
     @QtCore.Slot(int)
     def show_value_column(self, checked):
         """ Shows or hides the value column"""
-        self.ast_tree.setColumnHidden(3, not checked)                
+        self.ast_tree.setColumnHidden(COL_VALUE, not checked)                
+
+    @QtCore.Slot(int)
+    def show_pos_column(self, checked):
+        """ Shows or hides the line:col column"""
+        self.ast_tree.setColumnHidden(COL_POS, not checked)                
 
 
     def about(self):
@@ -292,8 +317,4 @@ def main():
 
 
 if __name__ == '__main__':
-
     main()
-    
-    
-        
