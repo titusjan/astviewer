@@ -88,6 +88,7 @@ class AstViewer(QtGui.QMainWindow):
         font.setPointSize(12)
 
         self.editor = QtGui.QTextEdit()
+        self.editor.setReadOnly(True)
         self.editor.setFont(font)
         central_layout.addWidget(self.editor)
 
@@ -109,21 +110,19 @@ class AstViewer(QtGui.QMainWindow):
 
     def open_file(self, file_name=None):
         if not file_name:
-            file_name = QtGui.QFileDialog.getOpenFileName(self, "Open File", '', "Python Files (*.py)")
+            file_name, _ = QtGui.QFileDialog.getOpenFileName(self, "Open File", '', "Python Files (*.py)")
 
-        logger.debug("Opening {}".format(file_name))
-        if file_name:
+        logger.debug("Opening {!r}".format(file_name))
+        if file_name != '':
             in_file = QtCore.QFile(file_name)
             if in_file.open(QtCore.QFile.ReadOnly | QtCore.QFile.Text):
                 text = in_file.readAll()
-
                 try:
                     # Python v3.
                     text = str(text, encoding='ascii')
                 except TypeError:
                     # Python v2.
                     text = str(text)
-                print (text)
                 self.editor.setPlainText(text)
             else: 
                 logger.warn("Unable to open: {}".format(file_name))
@@ -170,7 +169,7 @@ def main():
     app = QtGui.QApplication(sys.argv)
     
     parser = argparse.ArgumentParser(description='Python abstract syntax tree viewer')
-    parser.add_argument(dest='file_name', help='Python input file')
+    parser.add_argument(dest='file_name', help='Python input file', nargs='?')
     
     parser.add_argument('-l', '--log-level', dest='log_level', default = 'debug', 
         help = "Log level. Only log messages with a level higher or equal than this will be printed. Default: 'warn'",
