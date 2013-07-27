@@ -40,6 +40,7 @@ class AstViewer(QtGui.QMainWindow):
         self._source_code = ""
         
         # Views
+        self._setup_actions()
         self._setup_menu()
         self._setup_views()
         self.setWindowTitle(PROGRAM_NAME)
@@ -47,24 +48,50 @@ class AstViewer(QtGui.QMainWindow):
         # Update views
         self.open_file(file_name = file_name)
 
-              
+
+    def _setup_actions(self):
+        """ Creates the MainWindow actions.
+        """  
+        self.col_field_action = QtGui.QAction(
+            "Show Field column", self, checkable=True,
+            statusTip = "Shows or hides the Field column")
+        self.col_field_action.setShortcut("Ctrl+1")
+        self.col_field_action.toggled.connect(self.show_field_column)
+        
+        self.col_class_action = QtGui.QAction(
+            "Show Class column", self, checkable=True,
+            statusTip = "Shows or hides the Class column")
+        self.col_class_action.setShortcut("Ctrl+2")
+        self.col_class_action.toggled.connect(self.show_class_column)
+        
+        self.col_value_action = QtGui.QAction(
+            "Show Value column", self, checkable=True,
+            statusTip = "Shows or hides the Value column")
+        self.col_value_action.setShortcut("Ctrl+3")
+        self.col_value_action.toggled.connect(self.show_value_column)
+        
+                      
     def _setup_menu(self):
         """ Sets up the main menu.
         """
         file_menu = QtGui.QMenu("&File", self)
+        self.menuBar().addMenu(file_menu)
         file_menu.addAction("&New...", self.new_file, "Ctrl+N")
         file_menu.addAction("&Open...", self.open_file, "Ctrl+O")
-        
+
         close_action = file_menu.addAction("C&lose", self.close_window)
         close_action.setShortcut("Ctrl+W")
 
         quit_action = file_menu.addAction("E&xit", self.quit_application)
         quit_action.setShortcut("Ctrl+Q")
         
+        view_menu = self.menuBar().addMenu("&View")
+        view_menu.addAction(self.col_field_action)        
+        view_menu.addAction(self.col_class_action)        
+        view_menu.addAction(self.col_value_action)        
+        
         help_menu = QtGui.QMenu('&Help', self)
         help_menu.addAction('&About', self.about)
-
-        self.menuBar().addMenu(file_menu)
 
         self.menuBar().addSeparator()
         self.menuBar().addMenu(help_menu)
@@ -81,12 +108,15 @@ class AstViewer(QtGui.QMainWindow):
         
         # Tree widget
         self.ast_tree = QtGui.QTreeWidget()
+        
         self.ast_tree.setColumnCount(2)
+
         self.ast_tree.setHeaderLabels(["Node", "Field", "Class", "Value"])
-        self.ast_tree.header().resizeSection(0, 300)
-        self.ast_tree.header().resizeSection(1, 100)
-        self.ast_tree.header().resizeSection(2, 100)
-        self.ast_tree.header().resizeSection(3, 100)
+        self.ast_tree.header().resizeSection(0, 250)
+        self.ast_tree.header().resizeSection(1, 80)
+        self.ast_tree.header().resizeSection(2, 80)
+        self.ast_tree.header().resizeSection(3, 80)
+        self.ast_tree.header().setStretchLastSection(False) # default is already True for QTreeWidgets
         
         central_layout.addWidget(self.ast_tree)
 
@@ -100,8 +130,11 @@ class AstViewer(QtGui.QMainWindow):
         self.editor = QtGui.QTextEdit()
         self.editor.setReadOnly(True)
         self.editor.setFont(font)
+        self.editor.setWordWrapMode(QtGui.QTextOption.NoWrap)
         central_layout.addWidget(self.editor)
-
+        
+        
+        # Splitter parameters
         central_splitter.setCollapsible(0, False)
         central_splitter.setCollapsible(1, False)
         central_splitter.setStretchFactor(0, 30)
@@ -150,7 +183,7 @@ class AstViewer(QtGui.QMainWindow):
         """
         logger.debug("_fill_ast_tree_widget")
         syntax_tree = ast.parse(self._source_code, filename=self._file_name, mode='exec')
-        logger.debug(ast.dump(syntax_tree))
+        #logger.debug(ast.dump(syntax_tree))
         
         def class_name(obj):
             return obj.__class__.__name__
@@ -186,8 +219,9 @@ class AstViewer(QtGui.QMainWindow):
             
             return node_item
             
-        # Call helper function    
-        _ = add_node(syntax_tree, self.ast_tree, '<{}>'.format(self._file_name))
+        # Call helper function
+        self.ast_tree.clear()    
+        _ = add_node(syntax_tree, self.ast_tree, '"{}"'.format(self._file_name))
         self.ast_tree.expandToDepth(1)
         
             
@@ -196,6 +230,22 @@ class AstViewer(QtGui.QMainWindow):
         """ Updates and draws the plot with the new data
         """
         logger.debug("update_syntax_highlighting")
+        
+
+    @QtCore.Slot(int)
+    def show_field_column(self, checked):
+        """ Shows or hides the field column"""
+        self.ast_tree.setColumnHidden(1, not checked)                
+
+    @QtCore.Slot(int)
+    def show_class_column(self, checked):
+        """ Shows or hides the class column"""
+        self.ast_tree.setColumnHidden(2, not checked)                
+
+    @QtCore.Slot(int)
+    def show_value_column(self, checked):
+        """ Shows or hides the value column"""
+        self.ast_tree.setColumnHidden(3, not checked)                
 
 
     def about(self):
