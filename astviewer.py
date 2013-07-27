@@ -8,7 +8,6 @@ from __future__ import print_function
 import sys, argparse, os, logging, types, ast
 
 from PySide import QtCore, QtGui
-from PySide.QtCore import Qt
 
 logger = logging.getLogger(__name__)
 
@@ -116,12 +115,14 @@ class AstViewer(QtGui.QMainWindow):
         self.ast_tree.header().resizeSection(1, 80)
         self.ast_tree.header().resizeSection(2, 80)
         self.ast_tree.header().resizeSection(3, 80)
-        self.ast_tree.header().setStretchLastSection(False) # default is already True for QTreeWidgets
+        
+        # Don't stretch last column, it doesn't play nice when columns are 
+        # hidden and then shown again. 
+        self.ast_tree.header().setStretchLastSection(False) 
         
         central_layout.addWidget(self.ast_tree)
 
         # Editor widget
-        
         font = QtGui.QFont()
         font.setFamily('Courier')
         font.setFixedPitch(True)
@@ -271,9 +272,10 @@ def main():
     app = QtGui.QApplication(sys.argv)
     
     parser = argparse.ArgumentParser(description='Python abstract syntax tree viewer')
-    parser.add_argument(dest='_file_name', help='Python input file', nargs='?')
+    parser.add_argument(dest='file_name', help='Python input file', nargs='?')
     parser.add_argument('-l', '--log-level', dest='log_level', default = 'debug', 
-        help = "Log level. Only log messages with a level higher or equal than this will be printed. Default: 'debug'",
+        help = "Log level. Only log messages with a level higher or equal than this "
+            "will be printed. Default: 'debug'",
         choices = ('debug', 'info', 'warn', 'error', 'critical'))
     
     args = parser.parse_args()
@@ -283,7 +285,7 @@ def main():
 
     logger.info('Started {}'.format(PROGRAM_NAME))
     
-    ast_viewer = AstViewer(file_name = args._file_name)
+    ast_viewer = AstViewer(file_name = args.file_name)
     ast_viewer.resize(1400, 800)
     ast_viewer.show()
     
