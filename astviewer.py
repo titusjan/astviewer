@@ -81,9 +81,9 @@ class AstViewer(QtGui.QMainWindow):
         
         # Tree widget
         self.ast_tree = QtGui.QTreeWidget()
-        self.ast_tree.setColumnCount(1)
-        self.ast_tree.setHeaderLabels(["Class"])
-        #self.ast_tree.setHeaderLabels(["Class", "Name"])
+        self.ast_tree.setColumnCount(2)
+        #self.ast_tree.setHeaderLabels(["Class", "Field"])
+        self.ast_tree.setHeaderLabels(["Field", "Class", "Value"])
         
         central_layout.addWidget(self.ast_tree)
 
@@ -101,7 +101,7 @@ class AstViewer(QtGui.QMainWindow):
 
         central_splitter.setCollapsible(0, False)
         central_splitter.setCollapsible(1, False)
-        central_splitter.setStretchFactor(0, 20)
+        central_splitter.setStretchFactor(0, 30)
         central_splitter.setStretchFactor(1, 30)
         
         # Connect signals
@@ -145,28 +145,35 @@ class AstViewer(QtGui.QMainWindow):
     def _fill_ast_tree_widget(self):
         """ Fills the figure list widget with the titles/number of the figures
         """
-        logger.debug("update_syntax_highlighting")
-        logger.debug(self._source_code)
+        logger.debug("_fill_ast_tree_widget")
         syntax_tree = ast.parse(self._source_code, filename=self._file_name, mode='exec')
+        logger.debug(ast.dump(syntax_tree))
         
         def class_name(obj):
             return obj.__class__.__name__
                 
-        def add_node(ast_node, parent_item):
-            "Helper function"
-            
-            node_item = QtGui.QTreeWidgetItem(parent_item, [class_name(ast_node)])
+        def add_node(ast_node, parent_item, field_label):
+            """ Recursively adds nodes.
+
+                :param parent_item: The parent QTreeWidgetItem to which this node will be added
+                :param field_label: Labels how this node is known to the parent
+            """
+            #node_item = QtGui.QTreeWidgetItem(parent_item, [class_name(ast_node), field_label])
+            node_item = QtGui.QTreeWidgetItem(parent_item, [field_label, class_name(ast_node), ""])
             
             if isinstance(ast_node, ast.AST):
-                for _key, val in ast.iter_fields(ast_node):
-                    add_node(val, node_item)
+                for key, val in ast.iter_fields(ast_node):
+                    add_node(val, node_item, key)
                     
             elif type(ast_node) == types.ListType or type(ast_node) == types.TupleType:
-                for _idx, elem in enumerate(ast_node):
-                    add_node(elem, node_item)
+                for idx, elem in enumerate(ast_node):
+                    add_node(elem, node_item, "{}[{:d}]".format(field_label, idx))
+                    
+            else:
+                node_item.setText(2, repr(ast_node))
             
         # Call helper function    
-        add_node(syntax_tree, self.ast_tree)
+        add_node(syntax_tree, self.ast_tree, '<root>')
         self.ast_tree.expandAll()
 
             
@@ -213,7 +220,7 @@ def main():
     logger.info('Started {}'.format(PROGRAM_NAME))
     
     ast_viewer = AstViewer(file_name = args._file_name)
-    ast_viewer.resize(800, 600)
+    ast_viewer.resize(1200, 800)
     ast_viewer.show()
     
     exit_code = app.exec_()
