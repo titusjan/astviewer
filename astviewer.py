@@ -52,19 +52,19 @@ class AstViewer(QtGui.QMainWindow):
         """ Creates the MainWindow actions.
         """  
         self.col_field_action = QtGui.QAction(
-            "Show Field column", self, checkable=True,
+            "Show Field Column", self, checkable=True,
             statusTip = "Shows or hides the Field column")
         self.col_field_action.setShortcut("Ctrl+1")
         self.col_field_action.toggled.connect(self.show_field_column)
         
         self.col_class_action = QtGui.QAction(
-            "Show Class column", self, checkable=True,
+            "Show Class Column", self, checkable=True,
             statusTip = "Shows or hides the Class column")
         self.col_class_action.setShortcut("Ctrl+2")
         self.col_class_action.toggled.connect(self.show_class_column)
         
         self.col_value_action = QtGui.QAction(
-            "Show Value column", self, checkable=True,
+            "Show Value Column", self, checkable=True,
             statusTip = "Shows or hides the Value column")
         self.col_value_action.setShortcut("Ctrl+3")
         self.col_value_action.toggled.connect(self.show_value_column)
@@ -73,14 +73,11 @@ class AstViewer(QtGui.QMainWindow):
     def _setup_menu(self):
         """ Sets up the main menu.
         """
-        file_menu = QtGui.QMenu("&File", self)
-        self.menuBar().addMenu(file_menu)
-        file_menu.addAction("&New...", self.new_file, "Ctrl+N")
+        file_menu = self.menuBar().addMenu("&File")
+        file_menu.addAction("&New", self.new_file, "Ctrl+N")
         file_menu.addAction("&Open...", self.open_file, "Ctrl+O")
-
         close_action = file_menu.addAction("C&lose", self.close_window)
         close_action.setShortcut("Ctrl+W")
-
         quit_action = file_menu.addAction("E&xit", self.quit_application)
         quit_action.setShortcut("Ctrl+Q")
         
@@ -89,11 +86,11 @@ class AstViewer(QtGui.QMainWindow):
         view_menu.addAction(self.col_class_action)        
         view_menu.addAction(self.col_value_action)        
         
-        help_menu = QtGui.QMenu('&Help', self)
+        self.menuBar().addSeparator()
+        help_menu = self.menuBar().addMenu("&Help")
         help_menu.addAction('&About', self.about)
 
-        self.menuBar().addSeparator()
-        self.menuBar().addMenu(help_menu)
+        
         
 
     def _setup_views(self):
