@@ -25,11 +25,17 @@ COL_NODE = 0
 COL_FIELD = 1
 COL_CLASS = 2
 COL_VALUE = 3
-COL_POS   = 4
+COL_POS = 4
+COL_HIGHLIGHT = 5
 
 # The main window inherits from a Qt class, therefore it has many 
 # ancestors public methods and attributes.
 # pylint: disable=R0901, R0902, R0904 
+
+        
+def class_name(obj):
+    return obj.__class__.__name__
+
 
 class AstViewer(QtGui.QMainWindow):
     """ The main application.
@@ -124,12 +130,14 @@ class AstViewer(QtGui.QMainWindow):
         self.ast_tree = QtGui.QTreeWidget()
         self.ast_tree.setColumnCount(2)
         
-        self.ast_tree.setHeaderLabels(["Node", "Field", "Class", "Value", "Line : Col"])
+        self.ast_tree.setHeaderLabels(["Node", "Field", "Class", "Value", "Line : Col", "Highlight"])
         self.ast_tree.header().resizeSection(COL_NODE, 250)
         self.ast_tree.header().resizeSection(COL_FIELD, 80)
         self.ast_tree.header().resizeSection(COL_CLASS, 80)
         self.ast_tree.header().resizeSection(COL_VALUE, 80)
         self.ast_tree.header().resizeSection(COL_POS, 80)
+        self.ast_tree.header().resizeSection(COL_HIGHLIGHT, 100)
+        self.ast_tree.setColumnHidden(COL_HIGHLIGHT, not DEBUGGING)          
         
         # Don't stretch last column, it doesn't play nice when columns are 
         # hidden and then shown again. 
@@ -151,7 +159,7 @@ class AstViewer(QtGui.QMainWindow):
         # Splitter parameters
         central_splitter.setCollapsible(0, False)
         central_splitter.setCollapsible(1, False)
-        central_splitter.setSizes([250 + 80 + 30, 700])
+        central_splitter.setSizes([360, 700])
         central_splitter.setStretchFactor(0, 0)
         central_splitter.setStretchFactor(1, 70)
         
@@ -198,41 +206,50 @@ class AstViewer(QtGui.QMainWindow):
     def _fill_ast_tree_widget(self):
         """ Fills the figure list widget with the titles/number of the figures
         """
-        logger.debug("_fill_ast_tree_widget")
-        syntax_tree = ast.parse(self._source_code, filename=self._file_name, mode='exec')
-        #logger.debug(ast.dump(syntax_tree))
-        
-        def class_name(obj):
-            return obj.__class__.__name__
+        # State we keep during the recursion.
+        # Is needed to populate the selection column.
+        to_be_updated = list([])
+        state = {'from': '... : ...', 'to': '1 : 0'}
                 
         def add_node(ast_node, parent_item, field_label):
-            """ Recursively adds nodes.
+            """ Helper function that recursively adds nodes.
 
                 :param parent_item: The parent QTreeWidgetItem to which this node will be added
                 :param field_label: Labels how this node is known to the parent
             """
             node_item = QtGui.QTreeWidgetItem(parent_item)
-             
+
+            if hasattr(ast_node, 'lineno'):
+                position_str = "{:d} : {:d}".format(ast_node.lineno, ast_node.col_offset)
+
+                # If we find a new position string we set the items found since the last time
+                # to 'old_line : old_col : new_line : new_col' and reset the list of to-be-updated nodes                 
+                if position_str != state['to']:
+                    state['from'] = state['to']
+                    state['to'] = position_str
+                    for elem in to_be_updated:
+                        elem.setText(COL_HIGHLIGHT, "{} : {}".format(state['from'], state['to']))
+                    to_be_updated[:] = [node_item]
+                else:
+                    to_be_updated.append(node_item)
+            else:
+                to_be_updated.append(node_item)
+                position_str = ""
+
+            # Recursively descent the AST 
             if isinstance(ast_node, ast.AST):
                 value_str = ''
                 node_str = "{} = {}".format(field_label, class_name(ast_node))
                 for key, val in ast.iter_fields(ast_node):
-                    _ = add_node(val, node_item, key)
-                    
+                    add_node(val, node_item, key)
             elif type(ast_node) == types.ListType or type(ast_node) == types.TupleType:
                 value_str = ''
                 node_str = "{} = {}".format(field_label, class_name(ast_node))
                 for idx, elem in enumerate(ast_node):
-                    _ = add_node(elem, node_item, "{}[{:d}]".format(field_label, idx))
-                    
+                    add_node(elem, node_item, "{}[{:d}]".format(field_label, idx))
             else:
                 value_str = repr(ast_node)
                 node_str = "{} = {}".format(field_label, value_str)
-                
-            try:
-                position_str = "{:d} : {:d}".format(ast_node.lineno, ast_node.col_offset)
-            except AttributeError:
-                position_str = ""
                 
             node_item.setText(COL_NODE, node_str)
             node_item.setText(COL_FIELD, field_label)
@@ -240,41 +257,56 @@ class AstViewer(QtGui.QMainWindow):
             node_item.setText(COL_VALUE, value_str)
             node_item.setText(COL_POS, position_str)
             
-            return node_item
-            
-        # Call helper function
+        # End of helper function
+        
+        syntax_tree = ast.parse(self._source_code, filename=self._file_name, mode='exec')
+        #logger.debug(ast.dump(syntax_tree))
+        
         self.ast_tree.clear()    
-        _ = add_node(syntax_tree, self.ast_tree, '"{}"'.format(self._file_name))
+        add_node(syntax_tree, self.ast_tree, '"{}"'.format(self._file_name))
         self.ast_tree.expandToDepth(1)
+        
+        # Fill highlight column for remainder of nodes
+        for elem in to_be_updated:
+            elem.setText(COL_HIGHLIGHT, "{} : {}".format(state['to'], "... : ..."))
+            
         
  
     @QtCore.Slot(QtGui.QTreeWidgetItem, QtGui.QTreeWidgetItem)
     def highlight_node(self, current_item, _previous_item):
         """ Highlights the node if it has line:col information.
         """
-        position_str = current_item.text(COL_POS)
+        highlight_str = current_item.text(COL_HIGHLIGHT)
         try:
-            line_str, col_str = position_str.split(":")
+            from_line_str, from_col_str, to_line_str, to_col_str = highlight_str.split(":")
+            from_line = int(from_line_str) 
+            from_col  = int(from_col_str) 
+            to_line   = int(to_line_str) 
+            to_col    = int(to_col_str) 
         except ValueError:    
-            logger.warn("No position information from {!r}".format(position_str))
+            logger.warn("No position information from {!r}".format(highlight_str))
             return
         
-        line_nr = int(line_str)
-        col_nr = int(col_str)
-        logger.debug("Highlighting {:d} : {:d}".format(line_nr, col_nr))
-        self.goto_line(line_nr)
+        logger.debug("Highlighting ({:d}:{:d}) : ({:d}:{:d})".format(from_line, from_col, to_line, to_col))
+        self.select_text(from_line, from_col, to_line, to_col)
         
 
-    def goto_line(self, line_nr):
+    def select_text(self, from_line, from_col, to_line, to_col):
         """ Moves the document cursor to line_nr, col_nr
         """
         # findBlockByLineNumber seems to be 0-based.
         # http://www.qtcentre.org/threads/52574-How-do-I-set-a-QTextEdit-to-a-specific-line-by-line-number
-        text_block = self.editor.document().findBlockByLineNumber(line_nr - 1)
-        text_cursor = QtGui.QTextCursor(text_block)
-        text_cursor.select(QtGui.QTextCursor.LineUnderCursor)
-        self.editor.setTextCursor(text_cursor)
+        from_text_block = self.editor.document().findBlockByLineNumber(from_line - 1)
+        from_pos = from_text_block.position() + from_col
+        to_text_block = self.editor.document().findBlockByLineNumber(to_line - 1)
+        to_pos = to_text_block.position() + to_col
         
+        logger.debug("select position: {:d} - {:d}".format(from_pos, to_pos))
+        
+        text_cursor = self.editor.textCursor()
+        text_cursor.setPosition(from_pos)
+        text_cursor.setPosition(to_pos, QtGui.QTextCursor.KeepAnchor)
+        self.editor.setTextCursor(text_cursor)
         
 
     @QtCore.Slot(int)
@@ -297,10 +329,9 @@ class AstViewer(QtGui.QMainWindow):
         """ Shows or hides the line:col column"""
         self.ast_tree.setColumnHidden(COL_POS, not checked)                
 
-
     def my_test(self):
         """ Function for testing """
-        self.goto_line(1)
+        self.select_text(1, 5, 2, 5)
 
     def about(self):
         """ Shows the about message window. """
