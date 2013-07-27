@@ -5,8 +5,7 @@
 
 from __future__ import print_function
 
-import sys, argparse, os, logging
-
+import sys, argparse, os, logging, types, ast
 
 from PySide import QtCore, QtGui
 from PySide.QtCore import Qt
@@ -37,10 +36,15 @@ class AstViewer(QtGui.QMainWindow):
         super(AstViewer, self).__init__()
         
         # Models
-
+        self._file_name = ""
+        self._source_code = ""
+        
+        # Views
         self._setup_menu()
         self._setup_views()
         self.setWindowTitle(PROGRAM_NAME)
+        
+        # Update views
         self.open_file(file_name = file_name)
 
               
@@ -76,9 +80,12 @@ class AstViewer(QtGui.QMainWindow):
         central_splitter.setLayout(central_layout)
         
         # Tree widget
-        self.ast_tree = QtGui.QListWidget()
+        self.ast_tree = QtGui.QTreeWidget()
+        self.ast_tree.setColumnCount(1)
+        self.ast_tree.setHeaderLabels(["Class"])
+        #self.ast_tree.setHeaderLabels(["Class", "Name"])
+        
         central_layout.addWidget(self.ast_tree)
-        self._fill_ast_tree()
 
         # Editor widget
         
@@ -99,46 +106,70 @@ class AstViewer(QtGui.QMainWindow):
         
         # Connect signals
         self.ast_tree.currentItemChanged.connect(self.update_syntax_highlighting)
-        self.ast_tree.setCurrentRow(0)
         
 
     # End of setup_methods
     # pylint: enable=W0201
     
     def new_file(self):
+        self._file_name = ""
+        self._source_code = ""
         self.editor.clear()
+        
+        self._fill_ast_tree_widget()
+        
 
     def open_file(self, file_name=None):
         if not file_name:
             file_name, _ = QtGui.QFileDialog.getOpenFileName(self, "Open File", '', "Python Files (*.py)")
 
-        logger.debug("Opening {!r}".format(file_name))
         if file_name != '':
+            self._file_name = file_name 
+            logger.debug("Opening {!r}".format(file_name))
+            
             in_file = QtCore.QFile(file_name)
             if in_file.open(QtCore.QFile.ReadOnly | QtCore.QFile.Text):
                 text = in_file.readAll()
                 try:
-                    # Python v3.
-                    text = str(text, encoding='ascii')
+                    text = str(text, encoding='ascii')  # Python 3
                 except TypeError:
-                    # Python v2.
-                    text = str(text)
-                self.editor.setPlainText(text)
+                    text = str(text)                    # Python 2
+                self._source_code = text
+                self.editor.setPlainText(self._source_code)
             else: 
                 logger.warn("Unable to open: {}".format(file_name))
                 
-                
+        self._fill_ast_tree_widget()
+   
     
-    def _fill_ast_tree(self):
+    def _fill_ast_tree_widget(self):
         """ Fills the figure list widget with the titles/number of the figures
         """
         logger.debug("update_syntax_highlighting")
-        return 
-        for fig_idx, fig_name in enumerate(self._figure_names):
-            item = QtGui.QListWidgetItem(fig_name)
-            item.setData(Qt.UserRole, fig_idx)
-            self.ast_tree.addItem(item)
+        logger.debug(self._source_code)
+        syntax_tree = ast.parse(self._source_code, filename=self._file_name, mode='exec')
         
+        def class_name(obj):
+            return obj.__class__.__name__
+                
+        def add_node(ast_node, parent_item):
+            "Helper function"
+            
+            node_item = QtGui.QTreeWidgetItem(parent_item, [class_name(ast_node)])
+            
+            if isinstance(ast_node, ast.AST):
+                for _key, val in ast.iter_fields(ast_node):
+                    add_node(val, node_item)
+                    
+            elif type(ast_node) == types.ListType or type(ast_node) == types.TupleType:
+                for _idx, elem in enumerate(ast_node):
+                    add_node(elem, node_item)
+            
+        # Call helper function    
+        add_node(syntax_tree, self.ast_tree)
+        self.ast_tree.expandAll()
+
+            
 
     def update_syntax_highlighting(self):
         """ Updates and draws the plot with the new data
@@ -169,31 +200,24 @@ def main():
     app = QtGui.QApplication(sys.argv)
     
     parser = argparse.ArgumentParser(description='Python abstract syntax tree viewer')
-    parser.add_argument(dest='file_name', help='Python input file', nargs='?')
-    
+    parser.add_argument(dest='_file_name', help='Python input file', nargs='?')
     parser.add_argument('-l', '--log-level', dest='log_level', default = 'debug', 
-        help = "Log level. Only log messages with a level higher or equal than this will be printed. Default: 'warn'",
+        help = "Log level. Only log messages with a level higher or equal than this will be printed. Default: 'debug'",
         choices = ('debug', 'info', 'warn', 'error', 'critical'))
     
     args = parser.parse_args()
 
-    logging.basicConfig(level = args.log_level.upper(), stream = sys.stdout, 
+    logging.basicConfig(level = args.log_level.upper(), 
         format='%(filename)20s:%(lineno)-4d : %(levelname)-7s: %(message)s')
 
     logger.info('Started {}'.format(PROGRAM_NAME))
-
     
-    ast_viewer = AstViewer(file_name = args.file_name)
+    ast_viewer = AstViewer(file_name = args._file_name)
     ast_viewer.resize(800, 600)
     ast_viewer.show()
     
     exit_code = app.exec_()
     logging.info('Done {}'.format(PROGRAM_NAME))
-    sys.exit(exit_code)
-    
-    
-    logger.info('Done {}'.format(PROGRAM_NAME))
-
     sys.exit(exit_code)
 
 
