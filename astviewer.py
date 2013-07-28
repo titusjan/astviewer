@@ -30,10 +30,11 @@ COL_HIGHLIGHT = 5
 
 # The main window inherits from a Qt class, therefore it has many 
 # ancestors public methods and attributes.
-# pylint: disable=R0901, R0902, R0904 
+# pylint: disable=R0901, R0902, R0904, W0201 
 
         
 def class_name(obj):
+    """ Returns the class name of an object"""
     return obj.__class__.__name__
 
 
@@ -125,7 +126,8 @@ class AstViewer(QtGui.QMainWindow):
         self.ast_tree = QtGui.QTreeWidget()
         self.ast_tree.setColumnCount(2)
         
-        self.ast_tree.setHeaderLabels(["Node", "Field", "Class", "Value", "Line : Col", "Highlight"])
+        self.ast_tree.setHeaderLabels(["Node", "Field", "Class", "Value", 
+                                       "Line : Col", "Highlight"])
         self.ast_tree.header().resizeSection(COL_NODE, 250)
         self.ast_tree.header().resizeSection(COL_FIELD, 80)
         self.ast_tree.header().resizeSection(COL_CLASS, 80)
@@ -149,7 +151,7 @@ class AstViewer(QtGui.QMainWindow):
         self.editor.setReadOnly(True)
         self.editor.setFont(font)
         self.editor.setWordWrapMode(QtGui.QTextOption.NoWrap)
-        self.editor.setStyleSheet("selection-color: black; selection-background-color: yellow;");
+        self.editor.setStyleSheet("selection-color: black; selection-background-color: yellow;")
         central_layout.addWidget(self.editor)
         
         # Splitter parameters
@@ -162,9 +164,6 @@ class AstViewer(QtGui.QMainWindow):
         # Connect signals
         assert self.ast_tree.currentItemChanged.connect(self.highlight_node)
         
-
-    # End of setup_methods
-    # pylint: enable=W0201
     
     def new_file(self):
         """ Clears the widgets """
@@ -219,7 +218,8 @@ class AstViewer(QtGui.QMainWindow):
                 position_str = "{:d} : {:d}".format(ast_node.lineno, ast_node.col_offset)
 
                 # If we find a new position string we set the items found since the last time
-                # to 'old_line : old_col : new_line : new_col' and reset the list of to-be-updated nodes                 
+                # to 'old_line : old_col : new_line : new_col' and reset the list 
+                # of to-be-updated nodes                 
                 if position_str != state['to']:
                     state['from'] = state['to']
                     state['to'] = position_str
@@ -283,7 +283,8 @@ class AstViewer(QtGui.QMainWindow):
             logger.warn("No position information from {!r}".format(highlight_str))
             return
         
-        logger.debug("Highlighting ({:d}:{:d}) : ({:d}:{:d})".format(from_line, from_col, to_line, to_col))
+        logger.debug("Highlighting ({:d}:{:d}) : ({:d}:{:d})".
+                     format(from_line, from_col, to_line, to_col))
         self.select_text(from_line, from_col, to_line, to_col)
         
 
@@ -291,7 +292,6 @@ class AstViewer(QtGui.QMainWindow):
         """ Moves the document cursor to line_nr, col_nr
         """
         # findBlockByLineNumber seems to be 0-based.
-        # http://www.qtcentre.org/threads/52574-How-do-I-set-a-QTextEdit-to-a-specific-line-by-line-number
         from_text_block = self.editor.document().findBlockByLineNumber(from_line - 1)
         from_pos = from_text_block.position() + from_col
         to_text_block = self.editor.document().findBlockByLineNumber(to_line - 1)
@@ -342,7 +342,7 @@ class AstViewer(QtGui.QMainWindow):
         app = QtGui.QApplication.instance()
         app.closeAllWindows()
 
-# pylint: enable=R0901, R0902, R0904        
+# pylint: enable=R0901, R0902, R0904, W0201
 
 
         
