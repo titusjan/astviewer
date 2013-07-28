@@ -10,7 +10,7 @@ from PySide import QtCore, QtGui
 
 logger = logging.getLogger(__name__)
 
-DEBUGGING = True
+DEBUGGING = False
 
 PROGRAM_NAME = 'astviewer'
 PROGRAM_VERSION = '0.0.1'
@@ -42,9 +42,6 @@ class AstViewer(QtGui.QMainWindow):
     """
     def __init__(self, file_name = None):
         """ Constructor
-        
-            :param ast_tree: list of Figure objects
-            :param figure_names: optional list with a name/label for each figure
         """
         super(AstViewer, self).__init__()
         
@@ -72,25 +69,25 @@ class AstViewer(QtGui.QMainWindow):
             "Show Field Column", self, checkable=True, checked=True,
             statusTip = "Shows or hides the Field column")
         self.col_field_action.setShortcut("Ctrl+1")
-        self.col_field_action.toggled.connect(self.show_field_column)
+        assert self.col_field_action.toggled.connect(self.show_field_column)
         
         self.col_class_action = QtGui.QAction(
             "Show Class Column", self, checkable=True, checked=True,
             statusTip = "Shows or hides the Class column")
         self.col_class_action.setShortcut("Ctrl+2")
-        self.col_class_action.toggled.connect(self.show_class_column)
+        assert self.col_class_action.toggled.connect(self.show_class_column)
         
         self.col_value_action = QtGui.QAction(
             "Show Value Column", self, checkable=True, checked=True,
             statusTip = "Shows or hides the Value column")
         self.col_value_action.setShortcut("Ctrl+3")
-        self.col_value_action.toggled.connect(self.show_value_column)
+        assert self.col_value_action.toggled.connect(self.show_value_column)
         
         self.col_pos_action = QtGui.QAction(
             "Show Line:Col Column", self, checkable=True, checked=True,
             statusTip = "Shows or hides the 'Line : Col' column")
         self.col_pos_action.setShortcut("Ctrl+4")
-        self.col_pos_action.toggled.connect(self.show_pos_column)
+        assert self.col_pos_action.toggled.connect(self.show_pos_column)
                               
     def _setup_menu(self):
         """ Sets up the main menu.
@@ -98,10 +95,8 @@ class AstViewer(QtGui.QMainWindow):
         file_menu = self.menuBar().addMenu("&File")
         file_menu.addAction("&New", self.new_file, "Ctrl+N")
         file_menu.addAction("&Open...", self.open_file, "Ctrl+O")
-        close_action = file_menu.addAction("C&lose", self.close_window)
-        close_action.setShortcut("Ctrl+W")
-        quit_action = file_menu.addAction("E&xit", self.quit_application)
-        quit_action.setShortcut("Ctrl+Q")
+        #file_menu.addAction("C&lose", self.close_window, "Ctrl+W")
+        file_menu.addAction("E&xit", self.quit_application, "Ctrl+Q")
         
         if DEBUGGING is True:
             file_menu.addSeparator()
@@ -141,30 +136,31 @@ class AstViewer(QtGui.QMainWindow):
         
         # Don't stretch last column, it doesn't play nice when columns are 
         # hidden and then shown again. 
-        self.ast_tree.header().setStretchLastSection(False) 
+        self.ast_tree.header().setStretchLastSection(True) 
         central_layout.addWidget(self.ast_tree)
 
         # Editor widget
         font = QtGui.QFont()
         font.setFamily('Courier')
         font.setFixedPitch(True)
-        font.setPointSize(12)
+        font.setPointSize(13)
 
         self.editor = QtGui.QPlainTextEdit()
         self.editor.setReadOnly(True)
         self.editor.setFont(font)
         self.editor.setWordWrapMode(QtGui.QTextOption.NoWrap)
+        self.editor.setStyleSheet("selection-color: black; selection-background-color: yellow;");
         central_layout.addWidget(self.editor)
         
         # Splitter parameters
         central_splitter.setCollapsible(0, False)
         central_splitter.setCollapsible(1, False)
-        central_splitter.setSizes([360, 700])
-        central_splitter.setStretchFactor(0, 0)
-        central_splitter.setStretchFactor(1, 70)
+        central_splitter.setSizes([330, 760])
+        central_splitter.setStretchFactor(0, 1)
+        central_splitter.setStretchFactor(1, 0)
         
         # Connect signals
-        self.ast_tree.currentItemChanged.connect(self.highlight_node)
+        assert self.ast_tree.currentItemChanged.connect(self.highlight_node)
         
 
     # End of setup_methods
@@ -204,12 +200,12 @@ class AstViewer(QtGui.QMainWindow):
    
     
     def _fill_ast_tree_widget(self):
-        """ Fills the figure list widget with the titles/number of the figures
+        """ Populates the tree widget.
         """
         # State we keep during the recursion.
         # Is needed to populate the selection column.
         to_be_updated = list([])
-        state = {'from': '... : ...', 'to': '1 : 0'}
+        state = {'from': '? : ?', 'to': '1 : 0'}
                 
         def add_node(ast_node, parent_item, field_label):
             """ Helper function that recursively adds nodes.
@@ -357,9 +353,9 @@ def main():
     
     parser = argparse.ArgumentParser(description='Python abstract syntax tree viewer')
     parser.add_argument(dest='file_name', help='Python input file', nargs='?')
-    parser.add_argument('-l', '--log-level', dest='log_level', default = 'debug', 
+    parser.add_argument('-l', '--log-level', dest='log_level', default = 'warn', 
         help = "Log level. Only log messages with a level higher or equal than this "
-            "will be printed. Default: 'debug'",
+            "will be printed. Default: 'warn'",
         choices = ('debug', 'info', 'warn', 'error', 'critical'))
     
     args = parser.parse_args()
@@ -371,7 +367,7 @@ def main():
     
     ast_viewer = AstViewer(file_name = args.file_name)
     #ast_viewer.resize(1400, 800)
-    ast_viewer.resize(1000, 600)
+    ast_viewer.resize(1100, 750)
     ast_viewer.show()
     
     exit_code = app.exec_()
