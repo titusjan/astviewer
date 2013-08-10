@@ -75,14 +75,21 @@ def class_name(obj):
 class AstViewer(QtGui.QMainWindow):
     """ The main application.
     """
-    def __init__(self, file_name = None):
+    def __init__(self, source_code = '', file_name = ''):
         """ Constructor
+            
+            AST browser windows that displays the Abstract Syntax Tree
+            of source code. 
+            
+            The source can be given as text in the source parameter, or
+            can be read from a file. The file_name parameter overrides
+            the source parameter.
         """
         super(AstViewer, self).__init__()
         
         # Models
-        self._file_name = ""
-        self._source_code = ""
+        self._file_name = '<source>'
+        self._source_code = ''
         
         # Views
         self._setup_actions()
@@ -94,8 +101,13 @@ class AstViewer(QtGui.QMainWindow):
         self.col_field_action.setChecked(False)
         self.col_class_action.setChecked(False)
         self.col_value_action.setChecked(False)
-        self.open_file(file_name = file_name)
-
+        
+        if not file_name and not source_code:
+            file_name = self._get_file_name_from_dialog()
+        
+        self._update_widgets(file_name, source_code)
+        
+        
 
     def _setup_actions(self):
         """ Creates the MainWindow actions.
@@ -206,34 +218,59 @@ class AstViewer(QtGui.QMainWindow):
         self.editor.clear()
         self._fill_ast_tree_widget()
         
-
+    
     def open_file(self, file_name=None):
         """ Opens a new file. Show the open file dialog if file_name is None.
         """
         if not file_name:
-            file_name, _ = QtGui.QFileDialog.getOpenFileName(self, "Open File", 
-                                                             '', "Python Files (*.py)")
+            file_name = self._get_file_name_from_dialog()
+        
+        self._update_widgets(file_name, self._source_code)
+
+    
+    def _get_file_name_from_dialog(self):
+        """ Opens a file dialog and returns the file name selected by the user
+        """
+        file_name, _ = QtGui.QFileDialog.getOpenFileName(self, "Open File", 
+                                                         '', "Python Files (*.py)")
+        return file_name
+
+    
+    def _update_widgets(self, file_name, source_code):            
+        
         if file_name:
-            self._file_name = file_name 
-            logger.debug("Opening {!r}".format(file_name))
+            self._file_name, source_code = self._open_file(file_name)
             
-            in_file = QtCore.QFile(file_name)
-            if in_file.open(QtCore.QFile.ReadOnly | QtCore.QFile.Text):
-                text = in_file.readAll()
-                try:
-                    text = str(text, encoding='ascii')  # Python 3
-                except TypeError:
-                    text = str(text)                    # Python 2
-                self._source_code = text
-                self.editor.setPlainText(self._source_code)
-            else:
-                msg = "Unable to open: {}".format(file_name)
-                logger.warn(msg)
-                QtGui.QMessageBox.warning(self, 'warning', msg)
-                file_name = ''
-                
+        if self._file_name:
+            self._source_code = source_code
+
         self.setWindowTitle('{} - {}'.format(PROGRAM_NAME, file_name))
+        self.editor.setPlainText(self._source_code)
         self._fill_ast_tree_widget()
+        
+                
+    def _open_file(self, file_name):
+        """ Opens a file and returns (file_name, source_code) on success
+            Returns ('', '') if unsuccessful.
+        """
+        logger.debug("Opening {!r}".format(file_name))
+        
+        in_file = QtCore.QFile(file_name)
+        if in_file.open(QtCore.QFile.ReadOnly | QtCore.QFile.Text):
+            text = in_file.readAll()
+            try:
+                source_code = str(text, encoding='ascii')  # Python 3
+            except TypeError:
+                source_code = str(text)                    # Python 2
+            return file_name, source_code
+        else:
+            msg = "Unable to open: {}".format(file_name)
+            logger.warn(msg)
+            QtGui.QMessageBox.warning(self, 'warning', msg)
+            return ('', '')
+
+                
+    
    
     
     def _fill_ast_tree_widget(self):
@@ -395,3 +432,6 @@ class AstViewer(QtGui.QMainWindow):
 
 # pylint: enable=R0901, R0902, R0904, W0201
 
+if __name__ == '__main__':
+    sys.exit(view(width=800, height=600, source_code = "a + 5 + 6  / 3.7"))
+    
