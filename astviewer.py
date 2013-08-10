@@ -232,21 +232,30 @@ class AstViewer(QtGui.QMainWindow):
         """ Opens a file dialog and returns the file name selected by the user
         """
         file_name, _ = QtGui.QFileDialog.getOpenFileName(self, "Open File", 
-                                                         '', "Python Files (*.py)")
+                                                         '', "Python Files (*.py);;All Files (*)")
         return file_name
 
     
     def _update_widgets(self, file_name, source_code):            
         
         if file_name:
-            self._open_file(file_name)
+            self._load_file(file_name)
             
         self.setWindowTitle('{} - {}'.format(PROGRAM_NAME, self._file_name))
         self.editor.setPlainText(self._source_code)
-        self._fill_ast_tree_widget()
+        
+        try:
+            self._fill_ast_tree_widget()
+        except Exception:
+            if DEBUGGING:
+                raise
+            else:
+                msg = "Unable to parse file: {}".format(self._file_name)
+                logger.warn(msg)
+                QtGui.QMessageBox.warning(self, 'warning', msg)
         
                 
-    def _open_file(self, file_name):
+    def _load_file(self, file_name):
         """ Opens a file and sets self._file_name and self._source code if succesful
         """
         logger.debug("Opening {!r}".format(file_name))
@@ -272,6 +281,8 @@ class AstViewer(QtGui.QMainWindow):
     def _fill_ast_tree_widget(self):
         """ Populates the tree widget.
         """
+        self.ast_tree.clear()    
+        
         # State we keep during the recursion.
         # Is needed to populate the selection column.
         to_be_updated = list([])
@@ -328,8 +339,6 @@ class AstViewer(QtGui.QMainWindow):
         
         syntax_tree = ast.parse(self._source_code, filename=self._file_name, mode='exec')
         #logger.debug(ast.dump(syntax_tree))
-        
-        self.ast_tree.clear()    
         add_node(syntax_tree, self.ast_tree, '"{}"'.format(self._file_name))
         self.ast_tree.expandToDepth(1)
         
