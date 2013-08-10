@@ -8,6 +8,8 @@
 *	The AstViewer class constructor accepts a source_code
 	parameter so source can be compared from a string.
 	
+*	The AstViewer class constructor accepts a mode parameter
+	
 *	Bug fix: highlighting of the last element now works.
 
 	

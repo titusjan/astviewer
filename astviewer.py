@@ -75,7 +75,7 @@ def class_name(obj):
 class AstViewer(QtGui.QMainWindow):
     """ The main application.
     """
-    def __init__(self, source_code = '', file_name = ''):
+    def __init__(self, source_code = '', file_name = '', mode='exec'):
         """ Constructor
             
             AST browser windows that displays the Abstract Syntax Tree
@@ -87,9 +87,16 @@ class AstViewer(QtGui.QMainWindow):
         """
         super(AstViewer, self).__init__()
         
+        # Check values for mode 
+        # (see http://docs.python.org/2/library/functions.html#compile)
+        valid_modes = ['exec', 'eval', 'single']
+        if mode not in valid_modes:
+            raise ValueError("Mode must be one of: {}".format(valid_modes))
+        
         # Models
         self._file_name = '<source>'
         self._source_code = source_code
+        self._mode = mode
         
         # Views
         self._setup_actions()
@@ -337,7 +344,7 @@ class AstViewer(QtGui.QMainWindow):
             
         # End of helper function
         
-        syntax_tree = ast.parse(self._source_code, filename=self._file_name, mode='exec')
+        syntax_tree = ast.parse(self._source_code, filename=self._file_name, mode=self._mode)
         #logger.debug(ast.dump(syntax_tree))
         add_node(syntax_tree, self.ast_tree, '"{}"'.format(self._file_name))
         self.ast_tree.expandToDepth(1)
@@ -438,5 +445,5 @@ class AstViewer(QtGui.QMainWindow):
 # pylint: enable=R0901, R0902, R0904, W0201
 
 if __name__ == '__main__':
-    sys.exit(view(width=800, height=600, source_code = "a + 5 + 6  / 3.7"))
+    sys.exit(view(width=800, height=600, source_code = "a + 5 + 6  / 3.7", mode='eval'))
     
