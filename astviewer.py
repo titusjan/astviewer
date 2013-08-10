@@ -4,7 +4,7 @@
 """
 from __future__ import print_function
 
-import logging, types, ast
+import sys, logging, types, ast
 
 from PySide import QtCore, QtGui
 
@@ -25,15 +25,52 @@ COL_VALUE = 3
 COL_POS = 4
 COL_HIGHLIGHT = 5
 
-# The main window inherits from a Qt class, therefore it has many 
-# ancestors public methods and attributes.
-# pylint: disable=R0901, R0902, R0904, W0201 
+
+
+def check_class(obj, target_class, allow_none = False):
+    """ Checks that the  obj is a (sub)type of target_class. 
+        Raises a TypeError if this is not the case.
+    """
+    if not isinstance(obj, target_class):
+        if not (allow_none and obj is None):
+            raise TypeError("obj must be a of type {}, got: {}"
+                            .format(target_class, type(obj)))
+
+
+def get_qapplication_instance():
+    """ Returns the QApplication instance. Creates one if it doesn't exist.
+    """
+    app = QtGui.QApplication.instance()
+    if app is None:
+        app = QtGui.QApplication(sys.argv)
+    check_class(app, QtGui.QApplication)
+    return app
+
+
+def view(width=None, height=None, *args, **kwargs):
+    """ Opens an AstViewer window
+    """
+    app = get_qapplication_instance()
+    
+    window = AstViewer(*args, **kwargs)
+    if width and height:
+        window.resize(width, height)
+    window.show()
+        
+    logger.info("Starting the AST viewer...")
+    exit_code = app.exec_()
+    logger.info("AST viewer viewer done...")
+    return exit_code
 
         
 def class_name(obj):
     """ Returns the class name of an object"""
     return obj.__class__.__name__
 
+
+# The main window inherits from a Qt class, therefore it has many 
+# ancestors public methods and attributes.
+# pylint: disable=R0901, R0902, R0904, W0201 
 
 class AstViewer(QtGui.QMainWindow):
     """ The main application.
