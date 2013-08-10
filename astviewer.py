@@ -203,9 +203,9 @@ class AstViewer(QtGui.QMainWindow):
         # Splitter parameters
         central_splitter.setCollapsible(0, False)
         central_splitter.setCollapsible(1, False)
-        central_splitter.setSizes([330, 760])
-        central_splitter.setStretchFactor(0, 1)
-        central_splitter.setStretchFactor(1, 0)
+        central_splitter.setSizes([500, 500])
+        central_splitter.setStretchFactor(0, 0.5)
+        central_splitter.setStretchFactor(1, 0.5)
         
         # Connect signals
         assert self.ast_tree.currentItemChanged.connect(self.highlight_node)
