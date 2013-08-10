@@ -89,7 +89,7 @@ class AstViewer(QtGui.QMainWindow):
         
         # Models
         self._file_name = '<source>'
-        self._source_code = ''
+        self._source_code = source_code
         
         # Views
         self._setup_actions()
@@ -239,19 +239,15 @@ class AstViewer(QtGui.QMainWindow):
     def _update_widgets(self, file_name, source_code):            
         
         if file_name:
-            self._file_name, source_code = self._open_file(file_name)
+            self._open_file(file_name)
             
-        if self._file_name:
-            self._source_code = source_code
-
-        self.setWindowTitle('{} - {}'.format(PROGRAM_NAME, file_name))
+        self.setWindowTitle('{} - {}'.format(PROGRAM_NAME, self._file_name))
         self.editor.setPlainText(self._source_code)
         self._fill_ast_tree_widget()
         
                 
     def _open_file(self, file_name):
-        """ Opens a file and returns (file_name, source_code) on success
-            Returns ('', '') if unsuccessful.
+        """ Opens a file and sets self._file_name and self._source code if succesful
         """
         logger.debug("Opening {!r}".format(file_name))
         
@@ -262,15 +258,15 @@ class AstViewer(QtGui.QMainWindow):
                 source_code = str(text, encoding='ascii')  # Python 3
             except TypeError:
                 source_code = str(text)                    # Python 2
-            return file_name, source_code
+                
+            self._file_name = file_name
+            self._source_code = source_code
+            
         else:
             msg = "Unable to open: {}".format(file_name)
             logger.warn(msg)
             QtGui.QMessageBox.warning(self, 'warning', msg)
-            return ('', '')
-
-                
-    
+            
    
     
     def _fill_ast_tree_widget(self):
