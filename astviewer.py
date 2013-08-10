@@ -4,7 +4,7 @@
 """
 from __future__ import print_function
 
-import sys, argparse, os, logging, types, ast
+import logging, types, ast
 
 from PySide import QtCore, QtGui
 
@@ -12,13 +12,10 @@ logger = logging.getLogger(__name__)
 
 DEBUGGING = False
 
-PROGRAM_NAME = 'astviewer'
-PROGRAM_VERSION = '0.0.1'
-PROGRAM_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
-IMAGE_DIRECTORY = PROGRAM_DIRECTORY + '/images/'
+PROGRAM_NAME = 'astview'
+PROGRAM_VERSION = '1.0.0'
 ABOUT_MESSAGE = u"""%(prog)s version %(version)s
 """ % {"prog": PROGRAM_NAME, "version": PROGRAM_VERSION}
-
 
 # Tree column indices
 COL_NODE = 0
@@ -54,7 +51,7 @@ class AstViewer(QtGui.QMainWindow):
         self._setup_actions()
         self._setup_menu()
         self._setup_views()
-        self.setWindowTitle(PROGRAM_NAME)
+        self.setWindowTitle('{}'.format(PROGRAM_NAME))
         
         # Update views
         self.col_field_action.setChecked(False)
@@ -192,9 +189,13 @@ class AstViewer(QtGui.QMainWindow):
                     text = str(text)                    # Python 2
                 self._source_code = text
                 self.editor.setPlainText(self._source_code)
-            else: 
-                logger.warn("Unable to open: {}".format(file_name))
+            else:
+                msg = "Unable to open: {}".format(file_name)
+                logger.warn(msg)
+                QtGui.QMessageBox.warning(self, 'warning', msg)
+                file_name = ''
                 
+        self.setWindowTitle('{} - {}'.format(PROGRAM_NAME, file_name))
         self._fill_ast_tree_widget()
    
     
@@ -344,36 +345,3 @@ class AstViewer(QtGui.QMainWindow):
 
 # pylint: enable=R0901, R0902, R0904, W0201
 
-
-        
-def main():
-    """ Main program to test stand alone 
-    """
-    app = QtGui.QApplication(sys.argv)
-    
-    parser = argparse.ArgumentParser(description='Python abstract syntax tree viewer')
-    parser.add_argument(dest='file_name', help='Python input file', nargs='?')
-    parser.add_argument('-l', '--log-level', dest='log_level', default = 'warn', 
-        help = "Log level. Only log messages with a level higher or equal than this "
-            "will be printed. Default: 'warn'",
-        choices = ('debug', 'info', 'warn', 'error', 'critical'))
-    
-    args = parser.parse_args()
-
-    logging.basicConfig(level = args.log_level.upper(), 
-        format='%(filename)20s:%(lineno)-4d : %(levelname)-7s: %(message)s')
-
-    logger.info('Started {}'.format(PROGRAM_NAME))
-    
-    ast_viewer = AstViewer(file_name = args.file_name)
-    #ast_viewer.resize(1400, 800)
-    ast_viewer.resize(1100, 750)
-    ast_viewer.show()
-    
-    exit_code = app.exec_()
-    logging.info('Done {}'.format(PROGRAM_NAME))
-    sys.exit(exit_code)
-
-
-if __name__ == '__main__':
-    main()
