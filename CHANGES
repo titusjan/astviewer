@@ -1,0 +1,13 @@
+2013-08-10, Version 1.0.0
+
+*	Added setup.py installer
+
+*	Made separate (pyasterviewer) command line application
+	and (asterviewer.py) module.
+	
+*	The AstViewer class constructor accepts a source_code
+	parameter so source can be compared from a string.
+	
+*	Bug fix: highlighting of the last element now works.
+
+	
