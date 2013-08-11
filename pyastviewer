@@ -26,11 +26,10 @@ def main():
     
     args = parser.parse_args(args = remaining_argv[1:])
 
-    logging.basicConfig(level = args.log_level.upper(), 
-        format='%(filename)20s:%(lineno)-4d : %(levelname)-7s: %(message)s')
+    astviewer.logging_basic_config(args.log_level.upper())
 
     logger.info('Started {}'.format(astviewer.PROGRAM_NAME))
-    exit_code = astviewer.view(width=1100, height=800, file_name = args.file_name)
+    exit_code = astviewer.view(file_name = args.file_name, width=1100, height=800)
     logging.info('Done {}'.format(astviewer.PROGRAM_NAME))
     sys.exit(exit_code)
 

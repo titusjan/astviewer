@@ -3,8 +3,8 @@
    Program that shows the program on the right and its abstract syntax tree (ast) on the left.
 """
 from __future__ import print_function
-
-import sys, logging, types, ast
+                
+import sys, logging, types, ast, traceback
 
 from PySide import QtCore, QtGui
 
@@ -26,6 +26,11 @@ COL_POS = 4
 COL_HIGHLIGHT = 5
 
 
+def logging_basic_config(level):
+    """ Setup basic config logging. Useful for debugging to quickly setup a useful logger"""
+    fmt = '%(filename)20s:%(lineno)-4d : %(levelname)-7s: %(message)s'
+    logging.basicConfig(level=level, format=fmt)
+    
 
 def check_class(obj, target_class, allow_none = False):
     """ Checks that the  obj is a (sub)type of target_class. 
@@ -47,14 +52,12 @@ def get_qapplication_instance():
     return app
 
 
-def view(width=None, height=None, *args, **kwargs):
+def view(*args, **kwargs):
     """ Opens an AstViewer window
     """
     app = get_qapplication_instance()
     
     window = AstViewer(*args, **kwargs)
-    if width and height:
-        window.resize(width, height)
     window.show()
         
     logger.info("Starting the AST viewer...")
@@ -75,7 +78,8 @@ def class_name(obj):
 class AstViewer(QtGui.QMainWindow):
     """ The main application.
     """
-    def __init__(self, source_code = '', file_name = '', mode='exec'):
+    def __init__(self, file_name = '', source_code = '', mode='exec', 
+                 width = None, height = None):
         """ Constructor
             
             AST browser windows that displays the Abstract Syntax Tree
@@ -84,11 +88,19 @@ class AstViewer(QtGui.QMainWindow):
             The source can be given as text in the source parameter, or
             can be read from a file. The file_name parameter overrides
             the source parameter.
+            
+            The mode argument specifies what kind of code must be compiled; 
+            it can be 'exec' if source consists of a sequence of statements, 
+            'eval' if it consists of a single expression, or 'single' if it 
+            consists of a single interactive statement (in the latter case, 
+            expression statements that evaluate to something other than None 
+            will be printed).
+            (see http://docs.python.org/2/library/functions.html#compile)
+            
+            If width and height are both set, the window is resized.
         """
         super(AstViewer, self).__init__()
         
-        # Check values for mode 
-        # (see http://docs.python.org/2/library/functions.html#compile)
         valid_modes = ['exec', 'eval', 'single']
         if mode not in valid_modes:
             raise ValueError("Mode must be one of: {}".format(valid_modes))
@@ -109,11 +121,16 @@ class AstViewer(QtGui.QMainWindow):
         self.col_class_action.setChecked(False)
         self.col_value_action.setChecked(False)
         
+        if file_name and source_code:
+            logger.warn("Both the file_name and source_code are defined: source_code ignored.")
+            
         if not file_name and not source_code:
             file_name = self._get_file_name_from_dialog()
         
         self._update_widgets(file_name, source_code)
         
+        if width and height:
+            self.resize(width, height)
         
 
     def _setup_actions(self):
@@ -253,13 +270,15 @@ class AstViewer(QtGui.QMainWindow):
         
         try:
             self._fill_ast_tree_widget()
-        except Exception:
+        except Exception, ex:
             if DEBUGGING:
                 raise
             else:
-                msg = "Unable to parse file: {}".format(self._file_name)
-                logger.warn(msg)
-                QtGui.QMessageBox.warning(self, 'warning', msg)
+                stack_trace = traceback.format_exc()
+                msg = "Unable to parse file: {}\n\n{}\n\n{}" \
+                    .format(self._file_name, ex, stack_trace)
+                logger.exception(ex)
+                QtGui.QMessageBox.warning(self, 'error', msg)
         
                 
     def _load_file(self, file_name):
@@ -279,9 +298,9 @@ class AstViewer(QtGui.QMainWindow):
             self._source_code = source_code
             
         else:
-            msg = "Unable to open: {}".format(file_name)
+            msg = "Unable to open file: {}".format(file_name)
             logger.warn(msg)
-            QtGui.QMessageBox.warning(self, 'warning', msg)
+            QtGui.QMessageBox.warning(self, 'error', msg)
             
    
     
@@ -445,5 +464,5 @@ class AstViewer(QtGui.QMainWindow):
 # pylint: enable=R0901, R0902, R0904, W0201
 
 if __name__ == '__main__':
-    sys.exit(view(width=800, height=600, source_code = "a + 5 + 6  / 3.7", mode='eval'))
+    sys.exit(view(source_code = "print a + 5 + 6  / 3.7", mode='eval', width=800, height=600))
     
