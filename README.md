@@ -24,3 +24,8 @@ Python Abstract Syntax Tree viewer/browser in Qt ([screen shot](screen_shot.png)
 		>>> view(file_name='myprog.py', width=800, height=600)
 		>>> view(source_code = 'a + 3', mode='eval')
 
+
+#### Further links:
+
+The [Green Tree Snakes documentation on ASTs](http://greentreesnakes.readthedocs.org/) is available
+for those who find the [Python ast module documentation](http://docs.python.org/3/library/ast) too brief.
