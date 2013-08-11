@@ -73,7 +73,7 @@ def class_name(obj):
 
 # The main window inherits from a Qt class, therefore it has many 
 # ancestors public methods and attributes.
-# pylint: disable=R0901, R0902, R0904, W0201 
+# pylint: disable=R0901, R0902, R0904, W0201, R0913 
 
 class AstViewer(QtGui.QMainWindow):
     """ The main application.
@@ -127,7 +127,7 @@ class AstViewer(QtGui.QMainWindow):
         if not file_name and not source_code:
             file_name = self._get_file_name_from_dialog()
         
-        self._update_widgets(file_name, source_code)
+        self._update_widgets(file_name)
         
         if width and height:
             self.resize(width, height)
@@ -249,7 +249,7 @@ class AstViewer(QtGui.QMainWindow):
         if not file_name:
             file_name = self._get_file_name_from_dialog()
         
-        self._update_widgets(file_name, self._source_code)
+        self._update_widgets(file_name)
 
     
     def _get_file_name_from_dialog(self):
@@ -260,8 +260,9 @@ class AstViewer(QtGui.QMainWindow):
         return file_name
 
     
-    def _update_widgets(self, file_name, source_code):            
-        
+    def _update_widgets(self, file_name):
+        """ Reads source from a file and updates the tree and editor widgets.. 
+        """            
         if file_name:
             self._load_file(file_name)
             
@@ -270,7 +271,7 @@ class AstViewer(QtGui.QMainWindow):
         
         try:
             self._fill_ast_tree_widget()
-        except Exception, ex:
+        except StandardError, ex:
             if DEBUGGING:
                 raise
             else:
@@ -446,7 +447,7 @@ class AstViewer(QtGui.QMainWindow):
 
     def my_test(self):
         """ Function for testing """
-        self.select_text(1, 5, 2, 5)
+        pass
 
     def about(self):
         """ Shows the about message window. """
