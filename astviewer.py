@@ -62,7 +62,7 @@ def view(*args, **kwargs):
         
     logger.info("Starting the AST viewer...")
     exit_code = app.exec_()
-    logger.info("AST viewer viewer done...")
+    logger.info("AST viewer done...")
     return exit_code
 
         
