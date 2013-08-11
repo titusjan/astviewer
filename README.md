@@ -1,7 +1,7 @@
 astviewer
 =========
 
-Python Abstract Syntax Tree viewer/browser in Qt.
+Python Abstract Syntax Tree viewer/browser in Qt ([screen shot](screen_shot.png))
 
 Installation:
 
