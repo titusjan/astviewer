@@ -1,3 +1,4 @@
 .pydevproject
 .project
 build
+test_progs
