@@ -271,7 +271,7 @@ class AstViewer(QtGui.QMainWindow):
         
         try:
             self._fill_ast_tree_widget()
-        except StandardError, ex:
+        except Exception as ex:
             if DEBUGGING:
                 raise
             else:
@@ -347,7 +347,7 @@ class AstViewer(QtGui.QMainWindow):
                 node_str = "{} = {}".format(field_label, class_name(ast_node))
                 for key, val in ast.iter_fields(ast_node):
                     add_node(val, node_item, key)
-            elif type(ast_node) == types.ListType or type(ast_node) == types.TupleType:
+            elif type(ast_node) == list or type(ast_node) == tuple:
                 value_str = ''
                 node_str = "{} = {}".format(field_label, class_name(ast_node))
                 for idx, elem in enumerate(ast_node):
