@@ -59,6 +59,9 @@ def view(*args, **kwargs):
     
     window = AstViewer(*args, **kwargs)
     window.show()
+
+    if 'darwin' in sys.platform:
+        window.raise_()
         
     logger.info("Starting the AST viewer...")
     exit_code = app.exec_()
@@ -194,6 +197,10 @@ class AstViewer(QtGui.QMainWindow):
         
         # Tree widget
         self.ast_tree = QtGui.QTreeWidget()
+        self.ast_tree.setAlternatingRowColors(True)
+        #self.ast_tree.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.ast_tree.setUniformRowHeights(True)
+        self.ast_tree.setAnimated(False)
         self.ast_tree.setColumnCount(2)
         
         self.ast_tree.setHeaderLabels(["Node", "Field", "Class", "Value", 
