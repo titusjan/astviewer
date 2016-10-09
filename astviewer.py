@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 DEBUGGING = False
 
 PROGRAM_NAME = 'astview'
-PROGRAM_VERSION = '1.1.0'
+PROGRAM_VERSION = '1.0.0'
 ABOUT_MESSAGE = u"""%(prog)s version %(version)s
 """ % {"prog": PROGRAM_NAME, "version": PROGRAM_VERSION}
 
