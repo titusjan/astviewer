@@ -4,7 +4,7 @@
 """
 from __future__ import print_function
                 
-import sys, logging, types, ast, traceback
+import sys, logging, ast, traceback
 
 from PySide import QtCore, QtGui
 
@@ -122,7 +122,7 @@ class AstViewer(QtGui.QMainWindow):
         self.col_value_action.setChecked(False)
         
         if file_name and source_code:
-            logger.warn("Both the file_name and source_code are defined: source_code ignored.")
+            logger.warning("Both the file_name and source_code are defined: source_code ignored.")
             
         if not file_name and not source_code:
             file_name = self._get_file_name_from_dialog()
@@ -268,7 +268,8 @@ class AstViewer(QtGui.QMainWindow):
             
         self.setWindowTitle('{} - {}'.format(PROGRAM_NAME, self._file_name))
         self.editor.setPlainText(self._source_code)
-        
+
+        #pylint: disable=broad-except
         try:
             self._fill_ast_tree_widget()
         except Exception as ex:
@@ -300,7 +301,7 @@ class AstViewer(QtGui.QMainWindow):
             
         else:
             msg = "Unable to open file: {}".format(file_name)
-            logger.warn(msg)
+            logger.warning(msg)
             QtGui.QMessageBox.warning(self, 'error', msg)
             
    
@@ -347,7 +348,7 @@ class AstViewer(QtGui.QMainWindow):
                 node_str = "{} = {}".format(field_label, class_name(ast_node))
                 for key, val in ast.iter_fields(ast_node):
                     add_node(val, node_item, key)
-            elif type(ast_node) == list or type(ast_node) == tuple:
+            elif isinstance(ast_node, (list, tuple)):
                 value_str = ''
                 node_str = "{} = {}".format(field_label, class_name(ast_node))
                 for idx, elem in enumerate(ast_node):
