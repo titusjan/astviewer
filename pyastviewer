@@ -1,12 +1,14 @@
-#!/opt/local/bin/python
-""" 
-   Program that shows the program on the right and its abstract syntax tree (ast) on the left.
+#!/usr/bin/env python
+"""
+Program that shows the program on the right and its abstract syntax tree (ast) on the left.
 """
 from __future__ import print_function
 
 import sys, argparse, logging
-import astviewer
+
 from PySide import QtGui
+
+from astviewer.main import view, logging_basic_config, PROGRAM_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +37,12 @@ def main():
     
     args = parser.parse_args(args = remaining_argv[1:])
 
-    astviewer.logging_basic_config(args.log_level.upper())
+    logging_basic_config(args.log_level.upper())
 
-    logger.info('Started {}'.format(astviewer.PROGRAM_NAME))
-    exit_code = astviewer.view(file_name = args.file_name, mode = args.mode,  
+    logger.info('Started {}'.format(PROGRAM_NAME))
+    exit_code = view(file_name = args.file_name, mode = args.mode,
                                width=1100, height=800)
-    logging.info('Done {}'.format(astviewer.PROGRAM_NAME))
+    logging.info('Done {}'.format(PROGRAM_NAME))
     sys.exit(exit_code)
 
 
