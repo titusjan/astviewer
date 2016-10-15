@@ -6,6 +6,8 @@
 
 *   Persistent state (e.g. window size/pos) accross sessions.
 
+*   Assuming Python files are UTF-8 encoded instead of ascii
+
 
 2013-08-10, Version 1.0.0
 

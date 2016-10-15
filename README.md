@@ -23,8 +23,8 @@ Python Abstract Syntax Tree viewer/browser in Qt.
 *	Examples to use from within Python:
 
 	```python
-	>>> from astviewer import view
-	>>> view(file_name='myprog.py', width=800, height=600)
+	>>> from astviewer.main import view
+	>>> view(file_name='myprog.py')
 	>>> view(source_code = 'a + 3', mode='eval')
 	```
 

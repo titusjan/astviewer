@@ -9,6 +9,7 @@ import sys, logging, ast, traceback
 from astviewer.misc import get_qapplication_instance, class_name, get_qsettings
 from astviewer.misc import ABOUT_MESSAGE, PROGRAM_NAME, DEBUGGING
 from astviewer.qtpy import QtCore, QtGui, QtWidgets
+from astviewer.qtpy.compat import getopenfilename
 from astviewer.toggle_column_mixin import ToggleColumnTreeWidget
 
 
@@ -60,7 +61,7 @@ class AstViewer(QtWidgets.QMainWindow):
             will be printed).
             (see http://docs.python.org/2/library/functions.html#compile)
             
-            If reset is True, the persistenc settings (e.g. window size) are
+            If reset is True, the persistent settings (e.g. window size) are
             reset to their default values.
         """
         super(AstViewer, self).__init__()
@@ -82,19 +83,19 @@ class AstViewer(QtWidgets.QMainWindow):
         # Update views
         if file_name and source_code:
             logger.warning("Both the file_name and source_code are defined: source_code ignored.")
-            
-        if not file_name and not source_code:
-            file_name = self._get_file_name_from_dialog()
-        
-        self._update_widgets(file_name)
+
+        if file_name:
+            self._load_file(file_name)
+
+        self._update_widgets()
 
 
     def _setup_menu(self):
         """ Sets up the main menu.
         """
         file_menu = self.menuBar().addMenu("&File")
-        file_menu.addAction("&New", self.new_file, "Ctrl+N")
-        file_menu.addAction("&Open...", self.open_file, "Ctrl+O")
+        file_menu.addAction("&Open File...", self.open_file, "Ctrl+O")
+        file_menu.addAction("&Close File", self.close_file)
         file_menu.addAction("E&xit", self.quit_application, "Ctrl+Q")
         
         if DEBUGGING is True:
@@ -159,39 +160,46 @@ class AstViewer(QtWidgets.QMainWindow):
 
         # Connect signals
         self.ast_tree.currentItemChanged.connect(self.highlight_node)
-        
-    
-    def new_file(self):
+
+
+    def finalize(self):
+        """ Cleanup resources.
+        """
+        logger.debug("Cleaning up resources.")
+        self.ast_tree.currentItemChanged.disconnect(self.highlight_node)
+
+
+    def close_file(self):
         """ Clears the widgets """
         self._file_name = ""
         self._source_code = ""
         self.editor.clear()
-        self._fill_ast_tree_widget()
-        
+        self.ast_tree.clear()
+        self.setWindowTitle('{}'.format(PROGRAM_NAME))
+
     
     def open_file(self, file_name=None):
-        """ Opens a new file. Show the open file dialog if file_name is None.
+        """ Opens a Python file. Show the open file dialog if file_name is None.
         """
         if not file_name:
             file_name = self._get_file_name_from_dialog()
-        
-        self._update_widgets(file_name)
 
-    
+        if file_name:
+            self._load_file(file_name)
+
+        self._update_widgets()
+
+
     def _get_file_name_from_dialog(self):
         """ Opens a file dialog and returns the file name selected by the user
         """
-        file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File",
-                        '', "Python Files (*.py);;All Files (*)")
+        file_name, _ = getopenfilename(self, "Open File", '', "Python Files (*.py);;All Files (*)")
         return file_name
 
     
-    def _update_widgets(self, file_name):
-        """ Reads source from a file and updates the tree and editor widgets.. 
+    def _update_widgets(self):
+        """ Updates the tree and editor widgets.
         """            
-        if file_name:
-            self._load_file(file_name)
-            
         self.setWindowTitle('{} - {}'.format(PROGRAM_NAME, self._file_name))
         self.editor.setPlainText(self._source_code)
 
@@ -218,7 +226,7 @@ class AstViewer(QtWidgets.QMainWindow):
         if in_file.open(QtCore.QFile.ReadOnly | QtCore.QFile.Text):
             text = in_file.readAll()
             try:
-                source_code = str(text, encoding='ascii')  # Python 3
+                source_code = str(text, encoding='utf-8')  # Python 3
             except TypeError:
                 source_code = str(text)                    # Python 2
                 
@@ -234,7 +242,10 @@ class AstViewer(QtWidgets.QMainWindow):
     def _fill_ast_tree_widget(self):
         """ Populates the tree widget.
         """
-        self.ast_tree.clear()    
+        self.ast_tree.clear()
+        if not self._source_code:
+            logger.debug("Empty source code, use empty tree.")
+            return
         
         # State we keep during the recursion.
         # Is needed to populate the selection column.
@@ -290,7 +301,7 @@ class AstViewer(QtWidgets.QMainWindow):
             node_item.setText(AstViewer.COL_POS, position_str)
             
         # End of helper function
-        
+
         syntax_tree = ast.parse(self._source_code, filename=self._file_name, mode=self._mode)
         #logger.debug(ast.dump(syntax_tree))
         add_node(syntax_tree, self.ast_tree, '"{}"'.format(self._file_name))
@@ -298,7 +309,7 @@ class AstViewer(QtWidgets.QMainWindow):
         
         # Fill highlight column for remainder of nodes
         for elem in to_be_updated:
-            elem.setText(AstViewer.COL_HIGHLIGHT, "{} : {}".format(state['to'], "... : ..."))
+            elem.setText(AstViewer.COL_HIGHLIGHT, "{} : {}".format(state['to'], "<eof>:<eol>"))
             
         
  
@@ -306,18 +317,22 @@ class AstViewer(QtWidgets.QMainWindow):
     def highlight_node(self, current_item, _previous_item):
         """ Highlights the node if it has line:col information.
         """
-        highlight_str = current_item.text(AstViewer.COL_HIGHLIGHT)
-        from_line_str, from_col_str, to_line_str, to_col_str = highlight_str.split(":")
-            
-        try:
-            from_line_col = (int(from_line_str), int(from_col_str)) 
-        except ValueError:    
-            from_line_col = None
+        if current_item:
+            highlight_str = current_item.text(AstViewer.COL_HIGHLIGHT)
+            from_line_str, from_col_str, to_line_str, to_col_str = highlight_str.split(":")
 
-        try:
-            to_line_col = (int(to_line_str), int(to_col_str)) 
-        except ValueError:    
-            to_line_col = None
+            try:
+                from_line_col = (int(from_line_str), int(from_col_str))
+            except ValueError:
+                from_line_col = None
+
+            try:
+                to_line_col = (int(to_line_str), int(to_col_str))
+            except ValueError:
+                to_line_col = None
+        else:
+            from_line_col = to_line_col =(0, 0)
+
         
         logger.debug("Highlighting ({!r}) : ({!r})".format(from_line_col, to_line_col))
         self.select_text(from_line_col, to_line_col)
@@ -423,6 +438,7 @@ class AstViewer(QtWidgets.QMainWindow):
         """
         logger.debug("closeEvent")
         self._writeViewSettings()
+        self.finalize()
         self.close()
         event.accept()
         logger.debug("Closed {}".format(PROGRAM_NAME))

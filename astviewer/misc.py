@@ -6,7 +6,7 @@ import astviewer.qtpy._version as qtpy_version
 
 from astviewer.qtpy import QtCore, QtWidgets
 
-DEBUGGING = True
+DEBUGGING = False
 
 PROGRAM_NAME = 'astview'
 PROGRAM_VERSION = '1.1.0-dev'
