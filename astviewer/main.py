@@ -75,7 +75,6 @@ class AstViewer(QtWidgets.QMainWindow):
         self._mode = mode
         
         # Views
-        #self._setup_actions()
         self._setup_menu()
         self._setup_views(reset=reset)
         self.setWindowTitle('{}'.format(PROGRAM_NAME))
@@ -102,7 +101,7 @@ class AstViewer(QtWidgets.QMainWindow):
             file_menu.addSeparator()
             file_menu.addAction("&Test", self.my_test, "Ctrl+T")
         
-        #view_menu = self.menuBar().addMenu("&View")
+        self.view_menu = self.menuBar().addMenu("&View")
 
         self.menuBar().addSeparator()
         help_menu = self.menuBar().addMenu("&Help")
@@ -127,6 +126,9 @@ class AstViewer(QtWidgets.QMainWindow):
         self.ast_tree.setHeaderLabels(AstViewer.HEADER_LABELS)
         tree_header = self.ast_tree.header()
         self.ast_tree.add_header_context_menu(checkable={'Node': False}, enabled={'Node': False})
+
+        for action in self.ast_tree.get_header_context_menu_actions():
+            self.view_menu.addAction(action)
         
         # Don't stretch last column, it doesn't play nice when columns are
         # hidden and then shown again.
@@ -148,7 +150,7 @@ class AstViewer(QtWidgets.QMainWindow):
         # Splitter parameters
         self.central_splitter.setCollapsible(0, False)
         self.central_splitter.setCollapsible(1, False)
-        self.central_splitter.setSizes([500, 500])
+        self.central_splitter.setSizes([600, 500])
         self.central_splitter.setStretchFactor(0, 0.5)
         self.central_splitter.setStretchFactor(1, 0.5)
 
@@ -355,8 +357,8 @@ class AstViewer(QtWidgets.QMainWindow):
 
             :param reset: If True, the program resets to its default settings
         """
-        pos = QtCore.QPoint(20, 20)
-        window_size = QtCore.QSize(1024, 700)
+        pos = QtCore.QPoint(30, 30)
+        window_size = QtCore.QSize(1300, 700)  # Assumes minimal resolution of 1366 x 768
 
         header = self.ast_tree.header()
         header_restored = False

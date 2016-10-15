@@ -1,3 +1,12 @@
+????-??-??, Version 1.1.0
+
+*   Works with Python 3
+
+*   Works with PyQt5.
+
+*   Persistent state (e.g. window size/pos) accross sessions.
+
+
 2013-08-10, Version 1.0.0
 
 *	Added setup.py installer
