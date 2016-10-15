@@ -6,60 +6,13 @@ from __future__ import print_function
                 
 import sys, logging, ast, traceback
 
-import astviewer.qtpy as qtpy
-import astviewer.qtpy._version as qtpy_version
+from astviewer.misc import get_qapplication_instance, class_name, get_qsettings
+from astviewer.misc import ABOUT_MESSAGE, PROGRAM_NAME, DEBUGGING
 from astviewer.qtpy import QtCore, QtGui, QtWidgets
+from astviewer.toggle_column_mixin import ToggleColumnTreeWidget
+
 
 logger = logging.getLogger(__name__)
-
-DEBUGGING = True
-
-PROGRAM_NAME = 'astview'
-PROGRAM_VERSION = '1.1.0-dev'
-PYTHON_VERSION = "%d.%d.%d" % (sys.version_info[0:3])
-QT_API = qtpy.API
-QTPY_VERSION = '.'.join(map(str, qtpy_version.version_info))
-
-
-ABOUT_MESSAGE = ("{}: {}\n\nPython: {}\nQt API: {}"
-                 .format(PROGRAM_NAME, PROGRAM_VERSION, PYTHON_VERSION, QT_API))
-#
-# ABOUT_MESSAGE = u"""%(prog)s version %(version)s
-# """ % {"prog": PROGRAM_NAME, "version": PROGRAM_VERSION}
-
-# Tree column indices
-COL_NODE = 0
-COL_FIELD = 1
-COL_CLASS = 2
-COL_VALUE = 3
-COL_POS = 4
-COL_HIGHLIGHT = 5
-
-
-def logging_basic_config(level):
-    """ Setup basic config logging. Useful for debugging to quickly setup a useful logger"""
-    fmt = '%(filename)20s:%(lineno)-4d : %(levelname)-7s: %(message)s'
-    logging.basicConfig(level=level, format=fmt)
-    
-
-def check_class(obj, target_class, allow_none = False):
-    """ Checks that the  obj is a (sub)type of target_class. 
-        Raises a TypeError if this is not the case.
-    """
-    if not isinstance(obj, target_class):
-        if not (allow_none and obj is None):
-            raise TypeError("obj must be a of type {}, got: {}"
-                            .format(target_class, type(obj)))
-
-
-def get_qapplication_instance():
-    """ Returns the QApplication instance. Creates one if it doesn't exist.
-    """
-    app = QtWidgets.QApplication.instance()
-    if app is None:
-        app = QtWidgets.QApplication(sys.argv)
-    check_class(app, QtWidgets.QApplication)
-    return app
 
 
 def view(*args, **kwargs):
@@ -78,11 +31,6 @@ def view(*args, **kwargs):
     logger.info("AST viewer done...")
     return exit_code
 
-        
-def class_name(obj):
-    """ Returns the class name of an object"""
-    return obj.__class__.__name__
-
 
 # The main window inherits from a Qt class, therefore it has many 
 # ancestors public methods and attributes.
@@ -91,8 +39,10 @@ def class_name(obj):
 class AstViewer(QtWidgets.QMainWindow):
     """ The main application.
     """
-    def __init__(self, file_name = '', source_code = '', mode='exec', 
-                 width = None, height = None):
+    HEADER_LABELS = ["Node", "Field", "Class", "Value", "Line : Col", "Highlight"]
+    (COL_NODE, COL_FIELD, COL_CLASS, COL_VALUE, COL_POS, COL_HIGHLIGHT) = range(len(HEADER_LABELS))
+
+    def __init__(self, file_name = '', source_code = '', mode='exec', reset=False):
         """ Constructor
             
             AST browser windows that displays the Abstract Syntax Tree
@@ -110,7 +60,8 @@ class AstViewer(QtWidgets.QMainWindow):
             will be printed).
             (see http://docs.python.org/2/library/functions.html#compile)
             
-            If width and height are both set, the window is resized.
+            If reset is True, the persistenc settings (e.g. window size) are
+            reset to their default values.
         """
         super(AstViewer, self).__init__()
         
@@ -124,16 +75,12 @@ class AstViewer(QtWidgets.QMainWindow):
         self._mode = mode
         
         # Views
-        self._setup_actions()
+        #self._setup_actions()
         self._setup_menu()
-        self._setup_views()
+        self._setup_views(reset=reset)
         self.setWindowTitle('{}'.format(PROGRAM_NAME))
         
         # Update views
-        self.col_field_action.setChecked(False)
-        self.col_class_action.setChecked(False)
-        self.col_value_action.setChecked(False)
-        
         if file_name and source_code:
             logger.warning("Both the file_name and source_code are defined: source_code ignored.")
             
@@ -141,90 +88,49 @@ class AstViewer(QtWidgets.QMainWindow):
             file_name = self._get_file_name_from_dialog()
         
         self._update_widgets(file_name)
-        
-        if width and height:
-            self.resize(width, height)
-        
 
-    def _setup_actions(self):
-        """ Creates the MainWindow actions.
-        """  
-        self.col_field_action = QtWidgets.QAction(
-            "Show Field Column", self, checkable=True, checked=True,
-            statusTip = "Shows or hides the Field column")
-        self.col_field_action.setShortcut("Ctrl+1")
-        self.col_field_action.toggled.connect(self.show_field_column)
-        
-        self.col_class_action = QtWidgets.QAction(
-            "Show Class Column", self, checkable=True, checked=True,
-            statusTip = "Shows or hides the Class column")
-        self.col_class_action.setShortcut("Ctrl+2")
-        self.col_class_action.toggled.connect(self.show_class_column)
-        
-        self.col_value_action = QtWidgets.QAction(
-            "Show Value Column", self, checkable=True, checked=True,
-            statusTip = "Shows or hides the Value column")
-        self.col_value_action.setShortcut("Ctrl+3")
-        self.col_value_action.toggled.connect(self.show_value_column)
-        
-        self.col_pos_action = QtWidgets.QAction(
-            "Show Line:Col Column", self, checkable=True, checked=True,
-            statusTip = "Shows or hides the 'Line : Col' column")
-        self.col_pos_action.setShortcut("Ctrl+4")
-        self.col_pos_action.toggled.connect(self.show_pos_column)
-                              
+
     def _setup_menu(self):
         """ Sets up the main menu.
         """
         file_menu = self.menuBar().addMenu("&File")
         file_menu.addAction("&New", self.new_file, "Ctrl+N")
         file_menu.addAction("&Open...", self.open_file, "Ctrl+O")
-        #file_menu.addAction("C&lose", self.close_window, "Ctrl+W")
         file_menu.addAction("E&xit", self.quit_application, "Ctrl+Q")
         
         if DEBUGGING is True:
             file_menu.addSeparator()
             file_menu.addAction("&Test", self.my_test, "Ctrl+T")
         
-        view_menu = self.menuBar().addMenu("&View")
-        view_menu.addAction(self.col_field_action)        
-        view_menu.addAction(self.col_class_action)        
-        view_menu.addAction(self.col_value_action)        
-        view_menu.addAction(self.col_pos_action)        
-        
+        #view_menu = self.menuBar().addMenu("&View")
+
         self.menuBar().addSeparator()
         help_menu = self.menuBar().addMenu("&Help")
         help_menu.addAction('&About', self.about)
 
 
-    def _setup_views(self):
+    def _setup_views(self, reset=False):
         """ Creates the UI widgets. 
         """
-        central_splitter = QtWidgets.QSplitter(self, orientation = QtCore.Qt.Horizontal)
-        self.setCentralWidget(central_splitter)
+        self.central_splitter = QtWidgets.QSplitter(self, orientation = QtCore.Qt.Horizontal)
+        self.setCentralWidget(self.central_splitter)
 
         # Tree widget
-        self.ast_tree = QtWidgets.QTreeWidget()
+        self.ast_tree = ToggleColumnTreeWidget()
+        self.central_splitter.addWidget(self.ast_tree)
+
         self.ast_tree.setAlternatingRowColors(True)
-        #self.ast_tree.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.ast_tree.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.ast_tree.setUniformRowHeights(True)
         self.ast_tree.setAnimated(False)
-        self.ast_tree.setColumnCount(2)
+
+        self.ast_tree.setHeaderLabels(AstViewer.HEADER_LABELS)
+        tree_header = self.ast_tree.header()
+        self.ast_tree.add_header_context_menu(checkable={'Node': False}, enabled={'Node': False})
         
-        self.ast_tree.setHeaderLabels(["Node", "Field", "Class", "Value", 
-                                       "Line : Col", "Highlight"])
-        self.ast_tree.header().resizeSection(COL_NODE, 250)
-        self.ast_tree.header().resizeSection(COL_FIELD, 80)
-        self.ast_tree.header().resizeSection(COL_CLASS, 80)
-        self.ast_tree.header().resizeSection(COL_VALUE, 80)
-        self.ast_tree.header().resizeSection(COL_POS, 80)
-        self.ast_tree.header().resizeSection(COL_HIGHLIGHT, 100)
-        self.ast_tree.setColumnHidden(COL_HIGHLIGHT, not DEBUGGING)          
-        
-        # Don't stretch last column, it doesn't play nice when columns are 
-        # hidden and then shown again. 
-        self.ast_tree.header().setStretchLastSection(True) 
-        central_splitter.addWidget(self.ast_tree)
+        # Don't stretch last column, it doesn't play nice when columns are
+        # hidden and then shown again.
+        tree_header.setStretchLastSection(False)
 
         # Editor widget
         font = QtGui.QFont()
@@ -237,15 +143,18 @@ class AstViewer(QtWidgets.QMainWindow):
         self.editor.setFont(font)
         self.editor.setWordWrapMode(QtGui.QTextOption.NoWrap)
         self.editor.setStyleSheet("selection-color: black; selection-background-color: yellow;")
-        central_splitter.addWidget(self.editor)
+        self.central_splitter.addWidget(self.editor)
         
         # Splitter parameters
-        central_splitter.setCollapsible(0, False)
-        central_splitter.setCollapsible(1, False)
-        central_splitter.setSizes([500, 500])
-        central_splitter.setStretchFactor(0, 0.5)
-        central_splitter.setStretchFactor(1, 0.5)
-        
+        self.central_splitter.setCollapsible(0, False)
+        self.central_splitter.setCollapsible(1, False)
+        self.central_splitter.setSizes([500, 500])
+        self.central_splitter.setStretchFactor(0, 0.5)
+        self.central_splitter.setStretchFactor(1, 0.5)
+
+        # Read persistent settings
+        self._readViewSettings(reset = reset)
+
         # Connect signals
         self.ast_tree.currentItemChanged.connect(self.highlight_node)
         
@@ -348,7 +257,8 @@ class AstViewer(QtWidgets.QMainWindow):
                     state['from'] = state['to']
                     state['to'] = position_str
                     for elem in to_be_updated:
-                        elem.setText(COL_HIGHLIGHT, "{} : {}".format(state['from'], state['to']))
+                        elem.setText(AstViewer.COL_HIGHLIGHT,
+                                     "{} : {}".format(state['from'], state['to']))
                     to_be_updated[:] = [node_item]
                 else:
                     to_be_updated.append(node_item)
@@ -371,11 +281,11 @@ class AstViewer(QtWidgets.QMainWindow):
                 value_str = repr(ast_node)
                 node_str = "{} = {}".format(field_label, value_str)
                 
-            node_item.setText(COL_NODE, node_str)
-            node_item.setText(COL_FIELD, field_label)
-            node_item.setText(COL_CLASS, class_name(ast_node))
-            node_item.setText(COL_VALUE, value_str)
-            node_item.setText(COL_POS, position_str)
+            node_item.setText(AstViewer.COL_NODE, node_str)
+            node_item.setText(AstViewer.COL_FIELD, field_label)
+            node_item.setText(AstViewer.COL_CLASS, class_name(ast_node))
+            node_item.setText(AstViewer.COL_VALUE, value_str)
+            node_item.setText(AstViewer.COL_POS, position_str)
             
         # End of helper function
         
@@ -386,7 +296,7 @@ class AstViewer(QtWidgets.QMainWindow):
         
         # Fill highlight column for remainder of nodes
         for elem in to_be_updated:
-            elem.setText(COL_HIGHLIGHT, "{} : {}".format(state['to'], "... : ..."))
+            elem.setText(AstViewer.COL_HIGHLIGHT, "{} : {}".format(state['to'], "... : ..."))
             
         
  
@@ -394,7 +304,7 @@ class AstViewer(QtWidgets.QMainWindow):
     def highlight_node(self, current_item, _previous_item):
         """ Highlights the node if it has line:col information.
         """
-        highlight_str = current_item.text(COL_HIGHLIGHT)
+        highlight_str = current_item.text(AstViewer.COL_HIGHLIGHT)
         from_line_str, from_col_str, to_line_str, to_col_str = highlight_str.split(":")
             
         try:
@@ -438,40 +348,84 @@ class AstViewer(QtWidgets.QMainWindow):
             text_cursor.setPosition(to_pos, QtGui.QTextCursor.KeepAnchor)
         
         self.editor.setTextCursor(text_cursor)
-        
 
-    @QtCore.Slot(bool)
-    def show_field_column(self, checked):
-        """ Shows or hides the field column"""
-        self.ast_tree.setColumnHidden(COL_FIELD, not checked)                
 
-    @QtCore.Slot(bool)
-    def show_class_column(self, checked):
-        """ Shows or hides the class column"""
-        self.ast_tree.setColumnHidden(COL_CLASS, not checked)                
+    def _readViewSettings(self, reset=False):
+        """ Reads the persistent program settings
 
-    @QtCore.Slot(bool)
-    def show_value_column(self, checked):
-        """ Shows or hides the value column"""
-        self.ast_tree.setColumnHidden(COL_VALUE, not checked)                
+            :param reset: If True, the program resets to its default settings
+        """
+        pos = QtCore.QPoint(20, 20)
+        window_size = QtCore.QSize(1024, 700)
 
-    @QtCore.Slot(bool)
-    def show_pos_column(self, checked):
-        """ Shows or hides the line:col column"""
-        self.ast_tree.setColumnHidden(COL_POS, not checked)                
+        header = self.ast_tree.header()
+        header_restored = False
+
+        if reset:
+            logger.debug("Resetting persistent view settings")
+        else:
+            logger.debug("Reading view settings")
+            settings = get_qsettings()
+            settings.beginGroup('view')
+            pos = settings.value("main_window/pos", pos)
+            window_size = settings.value("main_window/size", window_size)
+            splitter_state = settings.value("central_splitter/state")
+            if splitter_state:
+                self.central_splitter.restoreState(splitter_state)
+            header_restored = self.ast_tree.read_view_settings('tree/header_state', settings, reset)
+            settings.endGroup()
+
+        if not header_restored:
+
+            header.resizeSection(AstViewer.COL_NODE, 250)
+            header.resizeSection(AstViewer.COL_FIELD, 80)
+            header.resizeSection(AstViewer.COL_CLASS, 80)
+            header.resizeSection(AstViewer.COL_VALUE, 80)
+            header.resizeSection(AstViewer.COL_POS, 80)
+            header.resizeSection(AstViewer.COL_HIGHLIGHT, 100)
+
+            for idx in range(len(AstViewer.HEADER_LABELS)):
+                visible = False if idx == AstViewer.COL_HIGHLIGHT else True
+                self.ast_tree.toggle_column_actions_group.actions()[idx].setChecked(visible)
+
+        self.resize(window_size)
+        self.move(pos)
+
+
+    def _writeViewSettings(self):
+        """ Writes the view settings to the persistent store
+        """
+        logger.debug("Writing view settings for window")
+
+        settings = get_qsettings()
+        settings.beginGroup('view')
+        self.ast_tree.write_view_settings("tree/header_state", settings)
+        settings.setValue("central_splitter/state", self.central_splitter.saveState())
+        settings.setValue("main_window/pos", self.pos())
+        settings.setValue("main_window/size", self.size())
+        settings.endGroup()
+
 
     def my_test(self):
         """ Function for testing """
         pass
 
+
     def about(self):
         """ Shows the about message window. """
         QtWidgets.QMessageBox.about(self, "About %s" % PROGRAM_NAME, ABOUT_MESSAGE)
 
-    def close_window(self):
-        """ Closes the window """
+
+    def closeEvent(self, event):
+        """ Called when the window is closed
+        """
+        logger.debug("closeEvent")
+        self._writeViewSettings()
         self.close()
-        
+        event.accept()
+        logger.debug("Closed {}".format(PROGRAM_NAME))
+
+
     def quit_application(self):
         """ Closes all windows """
         app = QtWidgets.QApplication.instance()
