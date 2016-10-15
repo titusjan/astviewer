@@ -202,9 +202,7 @@ class AstViewer(QtWidgets.QMainWindow):
         """
         central_splitter = QtWidgets.QSplitter(self, orientation = QtCore.Qt.Horizontal)
         self.setCentralWidget(central_splitter)
-        central_layout = QtWidgets.QHBoxLayout()
-        central_splitter.setLayout(central_layout)
-        
+
         # Tree widget
         self.ast_tree = QtWidgets.QTreeWidget()
         self.ast_tree.setAlternatingRowColors(True)
@@ -226,7 +224,7 @@ class AstViewer(QtWidgets.QMainWindow):
         # Don't stretch last column, it doesn't play nice when columns are 
         # hidden and then shown again. 
         self.ast_tree.header().setStretchLastSection(True) 
-        central_layout.addWidget(self.ast_tree)
+        central_splitter.addWidget(self.ast_tree)
 
         # Editor widget
         font = QtGui.QFont()
@@ -239,7 +237,7 @@ class AstViewer(QtWidgets.QMainWindow):
         self.editor.setFont(font)
         self.editor.setWordWrapMode(QtGui.QTextOption.NoWrap)
         self.editor.setStyleSheet("selection-color: black; selection-background-color: yellow;")
-        central_layout.addWidget(self.editor)
+        central_splitter.addWidget(self.editor)
         
         # Splitter parameters
         central_splitter.setCollapsible(0, False)
