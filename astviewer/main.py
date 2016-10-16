@@ -136,14 +136,14 @@ class AstViewer(QtWidgets.QMainWindow):
 
         # Connect signals
         self.ast_tree.currentItemChanged.connect(self.highlight_node)
-        self.editor.sigDoubleClicked.connect(self.ast_tree.select_node)
+        self.editor.sigTextClicked.connect(self.ast_tree.select_node)
 
 
     def finalize(self):
         """ Cleanup resources.
         """
         logger.debug("Cleaning up resources.")
-        self.editor.sigDoubleClicked.disconnect(self.ast_tree.select_node)
+        self.editor.sigTextClicked.disconnect(self.ast_tree.select_node)
         self.ast_tree.currentItemChanged.disconnect(self.highlight_node)
 
 
@@ -234,19 +234,18 @@ class AstViewer(QtWidgets.QMainWindow):
             from_line_str, from_col_str, to_line_str, to_col_str = highlight_str.split(":")
 
             try:
-                from_line_col = (int(from_line_str), int(from_col_str))
+                from_pos = (int(from_line_str), int(from_col_str))
             except ValueError:
-                from_line_col = None
+                from_pos = None
 
             try:
-                to_line_col = (int(to_line_str), int(to_col_str))
+                to_pos = (int(to_line_str), int(to_col_str))
             except ValueError:
-                to_line_col = None
+                to_pos = None
         else:
-            from_line_col = to_line_col =(0, 0)
+            from_pos = to_pos = (0, 0)
 
-        logger.debug("Highlighting ({!r}) : ({!r})".format(from_line_col, to_line_col))
-        self.editor.select_text(from_line_col, to_line_col)
+        self.editor.select_text(from_pos, to_pos)
 
 
     def _readViewSettings(self, reset=False):
@@ -275,7 +274,6 @@ class AstViewer(QtWidgets.QMainWindow):
             settings.endGroup()
 
         if not header_restored:
-
             header.resizeSection(SyntaxTreeWidget.COL_NODE, 250)
             header.resizeSection(SyntaxTreeWidget.COL_FIELD, 80)
             header.resizeSection(SyntaxTreeWidget.COL_CLASS, 80)

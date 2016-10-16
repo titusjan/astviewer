@@ -4,9 +4,11 @@
 
 *   Works with PyQt5.
 
-*   Persistent state (e.g. window size/pos) accross sessions.
+*   Persistent state (e.g. window size/pos) across sessions.
 
 *   Assuming Python files are UTF-8 encoded instead of ascii
+
+*   Clicking the text will select the corresponding node in the tree.
 
 
 2013-08-10, Version 1.0.0

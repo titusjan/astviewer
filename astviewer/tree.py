@@ -22,8 +22,6 @@ ROLE_END_POS   = QtCore.Qt.UserRole + 1
 class SyntaxTreeWidget(ToggleColumnTreeWidget):
     """ Source read-ony editor that can detect double clicks.
     """
-    sigDoubleClicked = QtCore.Signal(int, int)
-
     HEADER_LABELS = ["Node", "Field", "Class", "Value", "Line : Col", "Highlight"]
     (COL_NODE, COL_FIELD, COL_CLASS, COL_VALUE, COL_POS, COL_HIGHLIGHT) = range(len(HEADER_LABELS))
 
@@ -51,10 +49,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
     def select_node(self, line_nr, column_nr):
         """ Select the node give a line and column number
         """
-        logger.debug("select_node: {} {}".format(line_nr, column_nr))
         found_item = self.find_item(self.invisibleRootItem(), [line_nr, column_nr])
-
-        logger.info("No node found that corresponds to the text.")
         self.setCurrentItem(found_item) # Unselects if found_item is None
 
 
@@ -66,21 +61,22 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         """
         item_start_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS)
         item_end_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS)
-        logger.debug("  find_item: {}: {!r} : {!r}"
-                     .format(tree_item.text(SyntaxTreeWidget.COL_NODE), item_start_pos, item_end_pos))
+        # logger.debug("  find_item: {}: {!r} : {!r}"
+        #              .format(tree_item.text(SyntaxTreeWidget.COL_NODE), item_start_pos, item_end_pos))
 
-        # If start_pos < position < end_pos the current node qualifies.
-        if item_start_pos is not None and item_end_pos is not None:
-            if item_start_pos < position < item_end_pos:
-                return tree_item
-
-        # See if one of the children qualifies, otherwise return None
+        # See if one of the children matches
         for childIdx in range(tree_item.childCount()):
             child_item = tree_item.child(childIdx)
             found_node = self.find_item(child_item, position)
             if found_node is not None:
                 return found_node
 
+        # If start_pos < position < end_pos the current node matches.
+        if item_start_pos is not None and item_end_pos is not None:
+            if item_start_pos < position < item_end_pos:
+                return tree_item
+
+        # No matching node found in this subtree
         return None
 
 
