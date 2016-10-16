@@ -1,5 +1,4 @@
-
-""" 
+"""
    Program that shows the program on the right and its abstract syntax tree (ast) on the left.
 """
 from __future__ import print_function
@@ -10,14 +9,12 @@ from astviewer.misc import get_qapplication_instance, class_name, get_qsettings
 from astviewer.misc import ABOUT_MESSAGE, PROGRAM_NAME, DEBUGGING
 from astviewer.qtpy import QtCore, QtGui, QtWidgets
 from astviewer.qtpy.compat import getopenfilename
-from astviewer.toggle_column_mixin import ToggleColumnTreeWidget
+from astviewer.editor import SourceEditor
+from astviewer.tree import SyntaxTreeWidget
 
 
 logger = logging.getLogger(__name__)
 
-IDX_LINE, IDX_COL = 0, 1
-ROLE_START_POS = QtCore.Qt.UserRole
-ROLE_END_POS   = QtCore.Qt.UserRole + 1
 
 def view(*args, **kwargs):
     """ Opens an AstViewer window
@@ -37,30 +34,14 @@ def view(*args, **kwargs):
 
 
 
-class SourceEditor(QtWidgets.QPlainTextEdit):
-
-    sigDoubleClicked = QtCore.Signal(int, int)
-
-    def mouseDoubleClickEvent(self, mouseEvent):
-        """ On mouse double-click the sigDoubleClicked(line_nr, column_nr) is emited.
-        """
-        logger.debug("mouseDoubleClickEvent: ({}, {})".format(mouseEvent.x(), mouseEvent.y()))
-        cursor = self.cursorForPosition(mouseEvent.pos())
-        # Since the word wrap is off, there is one block par line. BLock numbers are zero-based
-        # but code lines start at 1.
-        self.sigDoubleClicked.emit(cursor.blockNumber() + 1, cursor.positionInBlock())
-
-
-# The main window inherits from a Qt class, therefore it has many 
+# The main window inherits from a Qt class, therefore it has many
 # ancestors public methods and attributes.
-# pylint: disable=R0901, R0902, R0904, W0201, R0913 
+# pylint: disable=R0901, R0902, R0904, W0201, R0913
 
 
 class AstViewer(QtWidgets.QMainWindow):
     """ The main application.
     """
-    HEADER_LABELS = ["Node", "Field", "Class", "Value", "Line : Col", "Highlight"]
-    (COL_NODE, COL_FIELD, COL_CLASS, COL_VALUE, COL_POS, COL_HIGHLIGHT) = range(len(HEADER_LABELS))
 
     def __init__(self, file_name = '', source_code = '', mode='exec', reset=False):
         """ Constructor
@@ -134,41 +115,16 @@ class AstViewer(QtWidgets.QMainWindow):
         self.central_splitter = QtWidgets.QSplitter(self, orientation = QtCore.Qt.Horizontal)
         self.setCentralWidget(self.central_splitter)
 
-        # Tree widget
-        self.ast_tree = ToggleColumnTreeWidget()
+        self.ast_tree = SyntaxTreeWidget()
         self.central_splitter.addWidget(self.ast_tree)
 
-        self.ast_tree.setAlternatingRowColors(True)
-        self.ast_tree.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.ast_tree.setUniformRowHeights(True)
-        self.ast_tree.setAnimated(False)
-
-        self.ast_tree.setHeaderLabels(AstViewer.HEADER_LABELS)
-        tree_header = self.ast_tree.header()
-        self.ast_tree.add_header_context_menu(checkable={'Node': False}, enabled={'Node': False})
-
+        # Add toggling of tree columns to the View menu
         for action in self.ast_tree.get_header_context_menu_actions():
             self.view_menu.addAction(action)
-        
-        # Don't stretch last column, it doesn't play nice when columns are
-        # hidden and then shown again.
-        tree_header.setStretchLastSection(False)
 
-        # Editor widget
-        font = QtGui.QFont()
-        font.setFamily('Courier')
-        font.setFixedPitch(True)
-        font.setPointSize(13)
-
-        #self.editor = QtWidgets.QPlainTextEdit()
         self.editor = SourceEditor()
-        self.editor.setReadOnly(True)
-        self.editor.setFont(font)
-        self.editor.setWordWrapMode(QtGui.QTextOption.NoWrap)
-        self.editor.setStyleSheet("selection-color: black; selection-background-color: yellow;")
         self.central_splitter.addWidget(self.editor)
         
-        # Splitter parameters
         self.central_splitter.setCollapsible(0, False)
         self.central_splitter.setCollapsible(1, False)
         self.central_splitter.setSizes([600, 500])
@@ -180,13 +136,14 @@ class AstViewer(QtWidgets.QMainWindow):
 
         # Connect signals
         self.ast_tree.currentItemChanged.connect(self.highlight_node)
-        self.editor.sigDoubleClicked.connect(self.select_node)
+        self.editor.sigDoubleClicked.connect(self.ast_tree.select_node)
 
 
     def finalize(self):
         """ Cleanup resources.
         """
         logger.debug("Cleaning up resources.")
+        self.editor.sigDoubleClicked.disconnect(self.ast_tree.select_node)
         self.ast_tree.currentItemChanged.disconnect(self.highlight_node)
 
 
@@ -224,9 +181,13 @@ class AstViewer(QtWidgets.QMainWindow):
         self.setWindowTitle('{} - {}'.format(PROGRAM_NAME, self._file_name))
         self.editor.setPlainText(self._source_code)
 
-        #pylint: disable=broad-except
+        if not self._source_code:
+            logger.debug("Empty source code, use empty tree.")
+            self.ast_tree.clear()
+            return
+
         try:
-            self._fill_ast_tree_widget()
+            syntax_tree = ast.parse(self._source_code, filename=self._file_name, mode=self._mode)
         except Exception as ex:
             if DEBUGGING:
                 raise
@@ -236,6 +197,9 @@ class AstViewer(QtWidgets.QMainWindow):
                     .format(self._file_name, ex, stack_trace)
                 logger.exception(ex)
                 QtWidgets.QMessageBox.warning(self, 'error', msg)
+        else:
+            self.ast_tree.populate(syntax_tree, root_label=self._file_name)
+
         
                 
     def _load_file(self, file_name):
@@ -260,103 +224,13 @@ class AstViewer(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.warning(self, 'error', msg)
             
 
-    def _fill_ast_tree_widget(self):
-        """ Populates the tree widget.
-        """
-        self.ast_tree.clear()
-        if not self._source_code:
-            logger.debug("Empty source code, use empty tree.")
-            return
-        
-        # State we keep during the recursion.
-        # Is needed to populate the selection column.
-        to_be_updated = list([])
-        from_pos = [None, None] # line, col
-        to_pos   = [1, 0]
 
-        state = dict(from_line = None, from_col = None, to_line = 1, to_col = 0)
-                
-        def add_node(ast_node, parent_item, field_label):
-            """ Helper function that recursively adds nodes.
-
-                :param parent_item: The parent QTreeWidgetItem to which this node will be added
-                :param field_label: Labels how this node is known to the parent
-            """
-            node_item = QtWidgets.QTreeWidgetItem(parent_item)
-
-            if hasattr(ast_node, 'lineno'):
-                position_str = "{:d} : {:d}".format(ast_node.lineno, ast_node.col_offset)
-
-                # If we find a new position string we set the items found since the last time
-                # to 'old_line : old_col : new_line : new_col' and reset the list 
-                # of to-be-updated nodes
-                if ast_node.lineno != to_pos[IDX_LINE] or ast_node.col_offset != to_pos[IDX_COL]:
-
-                    # We cannot just say from_pos = to_pos, this creates a new from_pos variable.
-                    # A special quirk of Python is that – if no global statement is in effect –
-                    # assignments to names always go into the innermost scope.
-                    from_pos[IDX_LINE], from_pos[IDX_COL] = to_pos[IDX_LINE], to_pos[IDX_COL]
-                    to_pos[IDX_LINE], to_pos[IDX_COL] = ast_node.lineno, ast_node.col_offset
-                    for elem in to_be_updated:
-                        elem.setText(AstViewer.COL_HIGHLIGHT,
-                                     "{0[0]}:{0[1]} : {1[0]}:{1[1]}".format(from_pos, to_pos))
-                        elem.setData(AstViewer.COL_HIGHLIGHT, ROLE_START_POS, from_pos)
-                        elem.setData(AstViewer.COL_HIGHLIGHT, ROLE_END_POS, to_pos)
-
-                    to_be_updated[:] = [node_item]
-                else:
-                    to_be_updated.append(node_item)
-            else:
-                to_be_updated.append(node_item)
-                position_str = ""
-
-            # Recursively descent the AST 
-            if isinstance(ast_node, ast.AST):
-                value_str = ''
-                node_str = "{} = {}".format(field_label, class_name(ast_node))
-                for key, val in ast.iter_fields(ast_node):
-                    add_node(val, node_item, key)
-            elif isinstance(ast_node, (list, tuple)):
-                value_str = ''
-                node_str = "{} = {}".format(field_label, class_name(ast_node))
-                for idx, elem in enumerate(ast_node):
-                    add_node(elem, node_item, "{}[{:d}]".format(field_label, idx))
-            else:
-                value_str = repr(ast_node)
-                node_str = "{} = {}".format(field_label, value_str)
-                
-            node_item.setText(AstViewer.COL_NODE, node_str)
-            node_item.setText(AstViewer.COL_FIELD, field_label)
-            node_item.setText(AstViewer.COL_CLASS, class_name(ast_node))
-            node_item.setText(AstViewer.COL_VALUE, value_str)
-            node_item.setText(AstViewer.COL_POS, position_str)
-
-            return node_item
-            
-        # End of helper function
-
-        syntax_tree = ast.parse(self._source_code, filename=self._file_name, mode=self._mode)
-        #logger.debug(ast.dump(syntax_tree))
-        root_item = add_node(syntax_tree, self.ast_tree, '"{}"'.format(self._file_name))
-        self.ast_tree.setCurrentItem(root_item)
-        self.ast_tree.expandToDepth(1)
-        #self.ast_tree.expandAll()
-        
-        # Fill highlight column for remainder of nodes
-        for elem in to_be_updated:
-            elem.setText(AstViewer.COL_HIGHLIGHT,
-                         "{0[0]}:{0[1]} : {1}".format(to_pos, "<eof>:<eol>"))
-            elem.setData(AstViewer.COL_HIGHLIGHT, ROLE_START_POS, to_pos)
-            #elem.setData(AstViewer.COL_HIGHLIGHT, ROLE_END_POS, to_pos) # TODO: what here?
-            
-        
- 
     @QtCore.Slot(QtWidgets.QTreeWidgetItem, QtWidgets.QTreeWidgetItem)
     def highlight_node(self, current_item, _previous_item):
         """ Highlights the node if it has line:col information.
         """
         if current_item:
-            highlight_str = current_item.text(AstViewer.COL_HIGHLIGHT)
+            highlight_str = current_item.text(SyntaxTreeWidget.COL_HIGHLIGHT)
             from_line_str, from_col_str, to_line_str, to_col_str = highlight_str.split(":")
 
             try:
@@ -372,76 +246,7 @@ class AstViewer(QtWidgets.QMainWindow):
             from_line_col = to_line_col =(0, 0)
 
         logger.debug("Highlighting ({!r}) : ({!r})".format(from_line_col, to_line_col))
-        self.select_text(from_line_col, to_line_col)
-
-
-    @QtCore.Slot(int, int)
-    def select_node(self, line_nr, column_nr):
-        """ Select the node give a line and column number
-        """
-        logger.debug("select_node: {} {}".format(line_nr, column_nr))
-        found_item = self.find_item(self.ast_tree.invisibleRootItem(), [line_nr, column_nr])
-
-        logger.info("No node found that corresponds to the text.")
-        self.ast_tree.setCurrentItem(found_item) # Unselects if found_item is None
-
-
-    def find_item(self, tree_item, position):
-        """ Finds the deepest node item that highlights the position at line_nr column_nr
-
-            :param tree_item: look within this QTreeWidgetItem and its child items
-            :param position: [line_nr, column_nr] list
-        """
-        item_start_pos = tree_item.data(AstViewer.COL_HIGHLIGHT, ROLE_START_POS)
-        item_end_pos = tree_item.data(AstViewer.COL_HIGHLIGHT, ROLE_END_POS)
-        logger.debug("  find_item: {}: {!r} : {!r}"
-                     .format(tree_item.text(AstViewer.COL_NODE), item_start_pos, item_end_pos))
-
-        # If start_pos < position < end_pos the current node qualifies.
-        if item_start_pos is not None and item_end_pos is not None:
-            if item_start_pos < position < item_end_pos:
-                return tree_item
-
-        # See if one of the children qualifies, otherwise return None
-        for childIdx in range(tree_item.childCount()):
-            child_item = tree_item.child(childIdx)
-            found_node = self.find_item(child_item, position)
-            if found_node is not None:
-                return found_node
-
-        return None
-
-
-
-
-    def select_text(self, from_line_col, to_line_col):
-        """ Selects a text in the range from_line:col ... to_line:col
-            
-            from_line_col and to_line_col should be a (line, column) tuple
-            If from_line_col is None, the selection starts at the beginning of the document
-            If to_line_col is None, the selection goes to the end of the document
-        """
-        text_cursor = self.editor.textCursor()
-        
-        if from_line_col is None:
-            text_cursor.movePosition(QtGui.QTextCursor.Start, QtGui.QTextCursor.MoveAnchor)
-        else:
-            from_line, from_col = from_line_col
-            # findBlockByLineNumber seems to be 0-based.
-            from_text_block = self.editor.document().findBlockByLineNumber(from_line - 1)
-            from_pos = from_text_block.position() + from_col
-            text_cursor.setPosition(from_pos, QtGui.QTextCursor.MoveAnchor)
-
-        if to_line_col is None:
-            text_cursor.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.KeepAnchor)
-        else:
-            to_line, to_col = to_line_col
-            to_text_block = self.editor.document().findBlockByLineNumber(to_line - 1)
-            to_pos = to_text_block.position() + to_col
-            text_cursor.setPosition(to_pos, QtGui.QTextCursor.KeepAnchor)
-        
-        self.editor.setTextCursor(text_cursor)
-        self.editor.ensureCursorVisible()
+        self.editor.select_text(from_line_col, to_line_col)
 
 
     def _readViewSettings(self, reset=False):
@@ -471,15 +276,15 @@ class AstViewer(QtWidgets.QMainWindow):
 
         if not header_restored:
 
-            header.resizeSection(AstViewer.COL_NODE, 250)
-            header.resizeSection(AstViewer.COL_FIELD, 80)
-            header.resizeSection(AstViewer.COL_CLASS, 80)
-            header.resizeSection(AstViewer.COL_VALUE, 80)
-            header.resizeSection(AstViewer.COL_POS, 80)
-            header.resizeSection(AstViewer.COL_HIGHLIGHT, 100)
+            header.resizeSection(SyntaxTreeWidget.COL_NODE, 250)
+            header.resizeSection(SyntaxTreeWidget.COL_FIELD, 80)
+            header.resizeSection(SyntaxTreeWidget.COL_CLASS, 80)
+            header.resizeSection(SyntaxTreeWidget.COL_VALUE, 80)
+            header.resizeSection(SyntaxTreeWidget.COL_POS, 80)
+            header.resizeSection(SyntaxTreeWidget.COL_HIGHLIGHT, 100)
 
             for idx in range(len(AstViewer.HEADER_LABELS)):
-                visible = False if idx == AstViewer.COL_HIGHLIGHT else True
+                visible = False if idx == SyntaxTreeWidget.COL_HIGHLIGHT else True
                 self.ast_tree.toggle_column_actions_group.actions()[idx].setChecked(visible)
 
         self.resize(window_size)
@@ -502,7 +307,7 @@ class AstViewer(QtWidgets.QMainWindow):
 
     def my_test(self):
         """ Function for testing """
-        pass
+        logger.debug("Test function called.")
 
 
     def about(self):
