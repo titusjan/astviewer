@@ -12,12 +12,14 @@ import sys, argparse, logging
 
 from qtpy import QtWidgets
 
-from astviewer.misc import logging_basic_config
+from astviewer.misc import logging_basic_config, handleException
 from astviewer.misc import PROGRAM_NAME, PROGRAM_VERSION, PYTHON_VERSION, QT_API
 from astviewer.main import view
 
 
 logger = logging.getLogger(__name__)
+
+sys.excepthook = handleException
 
         
 def main():
