@@ -53,6 +53,16 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         self.setCurrentItem(found_item) # Unselects if found_item is None
 
 
+    def get_item_span(self, tree_item):
+        """ Returns (start_pos, end_pos) tuple where start_pos and end_pos in turn are (line, col)
+            tuples
+        """
+        start_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS)
+        end_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS)
+        return (start_pos, end_pos)
+
+
+
     def find_item(self, tree_item, position):
         """ Finds the deepest node item that highlights the position at line_nr column_nr
 
@@ -94,8 +104,6 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         from_pos = [None, None] # line, col
         to_pos   = [1, 0]
 
-        state = dict(from_line = None, from_col = None, to_line = 1, to_col = 0)
-
         def add_node(ast_node, parent_item, field_label):
             """ Helper function that recursively adds nodes.
 
@@ -118,8 +126,6 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
                     from_pos[IDX_LINE], from_pos[IDX_COL] = to_pos[IDX_LINE], to_pos[IDX_COL]
                     to_pos[IDX_LINE], to_pos[IDX_COL] = ast_node.lineno, ast_node.col_offset
                     for elem in to_be_updated:
-                        elem.setText(SyntaxTreeWidget.COL_HIGHLIGHT,
-                                     "{0[0]}:{0[1]} : {1[0]}:{1[1]}".format(from_pos, to_pos))
                         elem.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, from_pos)
                         elem.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, to_pos)
 
@@ -162,8 +168,23 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
 
         # Fill highlight column for remainder of nodes
         for elem in to_be_updated:
-            elem.setText(SyntaxTreeWidget.COL_HIGHLIGHT,
-                         "{0[0]}:{0[1]} : {1}".format(to_pos, "<eof>:<eol>"))
             elem.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, to_pos)
             #elem.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, to_pos) # TODO: what here?
 
+        self._populateHighLightColumn(self.invisibleRootItem())
+
+
+    def _populateHighLightColumn(self, tree_item):
+        """ Fills the highlight column text
+        """
+        start_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS)
+        end_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS)
+
+        if start_pos is not None and end_pos is not None:
+            tree_item.setText(SyntaxTreeWidget.COL_HIGHLIGHT,
+                              "{0[0]}:{0[1]} : {1[0]}:{1[1]}".format(start_pos, end_pos))
+
+        # Recursively populate
+        for childIdx in range(tree_item.childCount()):
+            child_item = tree_item.child(childIdx)
+            self._populateHighLightColumn(child_item)

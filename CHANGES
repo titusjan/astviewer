@@ -1,28 +1,28 @@
 ????-??-??, Version 1.1.0
 
-*   Works with Python 3
+*   Works with Python 3.
 
 *   Works with PyQt5.
 
 *   Persistent state (e.g. window size/pos) across sessions.
 
-*   Assuming Python files are UTF-8 encoded instead of ascii
+*   Assumes Python files are UTF-8 encoded instead of ASCII.
 
 *   Clicking the text will select the corresponding node in the tree.
 
 
 2013-08-10, Version 1.0.0
 
-*	Added setup.py installer
+*    Added setup.py installer
 
-*	Made separate (pyasterviewer) command line application
-	and (asterviewer.py) module.
+*   Made separate (pyasterviewer) command line application
+    and (asterviewer.py) module.
 	
-*	The AstViewer class constructor accepts a source_code
-	parameter so source can be compared from a string.
-	
-*	The AstViewer class constructor accepts a mode parameter
-	
-*	Bug fix: highlighting of the last element now works.
+*   The AstViewer class constructor accepts a source_code
+    parameter so source can be compared from a string.
+
+*   The AstViewer class constructor accepts a mode parameter
+
+*   Bug fix: highlighting of the last element now works.
 
 	

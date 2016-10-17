@@ -44,7 +44,6 @@ class SourceEditor(QtWidgets.QPlainTextEdit):
         self.sigTextClicked.emit(cursor.blockNumber() + 1, cursor.positionInBlock())
 
 
-
     def select_text(self, from_pos, to_line_pos):
         """ Selects a text in the range from_line:col ... to_line:col
             

@@ -229,21 +229,13 @@ class AstViewer(QtWidgets.QMainWindow):
     def highlight_node(self, current_item, _previous_item):
         """ Highlights the node if it has line:col information.
         """
+        from_pos = to_pos = (0, 0) # unselect
+
         if current_item:
-            highlight_str = current_item.text(SyntaxTreeWidget.COL_HIGHLIGHT)
-            from_line_str, from_col_str, to_line_str, to_col_str = highlight_str.split(":")
-
             try:
-                from_pos = (int(from_line_str), int(from_col_str))
-            except ValueError:
-                from_pos = None
-
-            try:
-                to_pos = (int(to_line_str), int(to_col_str))
-            except ValueError:
-                to_pos = None
-        else:
-            from_pos = to_pos = (0, 0)
+                from_pos, to_pos = self.ast_tree.get_item_span(current_item)
+            except:
+                logger.warning("No span founc for item. Unselecting text.")
 
         self.editor.select_text(from_pos, to_pos)
 
