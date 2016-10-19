@@ -32,7 +32,8 @@ class SourceEditor(QtWidgets.QPlainTextEdit):
         self.setReadOnly(True)
         self.setFont(font)
         self.setWordWrapMode(QtGui.QTextOption.NoWrap)
-        self.setStyleSheet("selection-color: black; selection-background-color: yellow;")
+        self.setCenterOnScroll(True)
+        self.setStyleSheet("selection-color: black; selection-background-color: #FFE000;")
 
 
     def mousePressEvent(self, mouseEvent):
@@ -46,29 +47,38 @@ class SourceEditor(QtWidgets.QPlainTextEdit):
 
     def select_text(self, from_pos, to_line_pos):
         """ Selects a text in the range from_line:col ... to_line:col
-            
+
             from_pos and to_line_pos should be a (line, column) tuple
             If from_pos is None, the selection starts at the beginning of the document
             If to_line_pos is None, the selection goes to the end of the document
         """
         text_cursor = self.textCursor()
-        
+
+        # Select from back to front. This makes block better visible after scrolling.
+        if to_line_pos is None:
+            text_cursor.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.MoveAnchor)
+        else:
+            to_line, to_col = to_line_pos
+            to_text_block = self.document().findBlockByLineNumber(to_line - 1)
+            to_pos = to_text_block.position() + to_col
+            text_cursor.setPosition(to_pos, QtGui.QTextCursor.MoveAnchor)
+
         if from_pos is None:
-            text_cursor.movePosition(QtGui.QTextCursor.Start, QtGui.QTextCursor.MoveAnchor)
+            text_cursor.movePosition(QtGui.QTextCursor.Start, QtGui.QTextCursor.KeepAnchor)
         else:
             from_line, from_col = from_pos
             # findBlockByLineNumber seems to be 0-based.
             from_text_block = self.document().findBlockByLineNumber(from_line - 1)
             from_pos = from_text_block.position() + from_col
-            text_cursor.setPosition(from_pos, QtGui.QTextCursor.MoveAnchor)
+            text_cursor.setPosition(from_pos, QtGui.QTextCursor.KeepAnchor)
 
-        if to_line_pos is None:
-            text_cursor.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.KeepAnchor)
-        else:
-            to_line, to_col = to_line_pos
-            to_text_block = self.document().findBlockByLineNumber(to_line - 1)
-            to_pos = to_text_block.position() + to_col
-            text_cursor.setPosition(to_pos, QtGui.QTextCursor.KeepAnchor)
-        
         self.setTextCursor(text_cursor)
         self.ensureCursorVisible()
+
+
+    def get_last_pos(self):
+        """ Gets the linenr and column of the last character
+        """
+        text_cursor = self.textCursor()
+        text_cursor.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.MoveAnchor)
+        return (text_cursor.blockNumber() + 1, text_cursor.positionInBlock())

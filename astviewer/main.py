@@ -198,7 +198,8 @@ class AstViewer(QtWidgets.QMainWindow):
                 logger.exception(ex)
                 QtWidgets.QMessageBox.warning(self, 'error', msg)
         else:
-            self.ast_tree.populate(syntax_tree, root_label=self._file_name)
+            last_pos = self.editor.get_last_pos()
+            self.ast_tree.populate(syntax_tree, last_pos, root_label=self._file_name)
 
         
                 
@@ -237,7 +238,11 @@ class AstViewer(QtWidgets.QMainWindow):
             except:
                 logger.warning("No span founc for item. Unselecting text.")
 
-        self.editor.select_text(from_pos, to_pos)
+        if from_pos is None or to_pos is None:
+            logger.debug("Unselecting text")
+        else:
+            logger.debug("selecting text: {} -> {}".format(from_pos, to_pos))
+            self.editor.select_text(from_pos, to_pos)
 
 
     def _readViewSettings(self, reset=False):
@@ -273,7 +278,7 @@ class AstViewer(QtWidgets.QMainWindow):
             header.resizeSection(SyntaxTreeWidget.COL_POS, 80)
             header.resizeSection(SyntaxTreeWidget.COL_HIGHLIGHT, 100)
 
-            for idx in range(len(AstViewer.HEADER_LABELS)):
+            for idx in range(len(SyntaxTreeWidget.HEADER_LABELS)):
                 visible = False if idx == SyntaxTreeWidget.COL_HIGHLIGHT else True
                 self.ast_tree.toggle_column_actions_group.actions()[idx].setChecked(visible)
 
@@ -298,6 +303,7 @@ class AstViewer(QtWidgets.QMainWindow):
     def my_test(self):
         """ Function for testing """
         logger.debug("Test function called.")
+        logger.info("Last character: {}".format(self.editor.get_last_pos()))
 
 
     def about(self):
@@ -320,3 +326,4 @@ class AstViewer(QtWidgets.QMainWindow):
         """ Closes all windows """
         app = QtWidgets.QApplication.instance()
         app.closeAllWindows()
+

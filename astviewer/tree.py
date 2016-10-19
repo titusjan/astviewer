@@ -11,12 +11,66 @@ from astviewer.toggle_column_mixin import ToggleColumnTreeWidget
 logger = logging.getLogger(__name__)
 
 IDX_LINE, IDX_COL = 0, 1
+ROLE_POS = QtCore.Qt.UserRole
 ROLE_START_POS = QtCore.Qt.UserRole
 ROLE_END_POS   = QtCore.Qt.UserRole + 1
 
 # The widget inherits from a Qt class, therefore it has many
 # ancestors public methods and attributes.
 # pylint: disable=R0901, R0902, R0904, W0201, R0913
+
+
+def cmpIdx(idx0, idx1):
+    """ Returns negative if idx0 < idx1, zero if idx0 == idx1 and strictly positive if idx0 > idx1.
+
+        If an idx0 or idx1 equals -1 or None, it is interpreted as the last element in a list
+        and thus larger than a positive integer
+
+        :param idx0: positive int, -1 or None
+        :param idx2: positive int, -1 or None
+        :return: bool
+    """
+    assert idx0 == None or idx0 == -1 or idx0 >=0, \
+        "Idx0 should be None, -1 or >= 0. Got: {!r}".format(idx0)
+    assert idx1 == None or idx1 == -1 or idx1 >=0, \
+        "Idx1 should be None, -1 or >= 0. Got: {!r}".format(idx2)
+
+    # Handle -1 the same way as None
+    if idx0 == -1:
+        idx0 = None
+    if idx1 == -1:
+        idx1 = None
+
+    if idx0 == idx1:
+        return 0
+    elif idx1 is None:
+        return -1
+    elif idx0 is None:
+        return 1
+    else:
+        return -1 if idx0 < idx1 else 1
+
+
+def firstPos(pos0, pos1):
+    """ Returns the first (minimum) of the two posistions
+
+        :param pos0: (line_nr, col_nr)
+        :param pos1: (line_nr, col_nr)
+        :return: (line_nr, col_nr)
+    """
+    cmpLineNr = cmpIdx(pos0[0], pos1[0])
+    if cmpLineNr < 0:
+        return pos0
+    elif cmpLineNr > 0:
+        return pos1
+    else:
+        cmpColNr = cmpIdx(pos0[1], pos1[1])
+        if cmpColNr < 0:
+            return pos0
+        elif cmpColNr > 0:
+            return pos1
+        else:
+            return pos0 # positions are the same. return either one of them
 
 
 class SyntaxTreeWidget(ToggleColumnTreeWidget):
@@ -37,7 +91,8 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
 
         self.setHeaderLabels(SyntaxTreeWidget.HEADER_LABELS)
         tree_header = self.header()
-        self.add_header_context_menu(checkable={'Node': False}, enabled={'Node': False})
+        self.add_header_context_menu(checked={'Node': True}, checkable={'Node': True},
+                                     enabled={'Node': False})
 
         # Don't stretch last column, it doesn't play nice when columns are
         # hidden and then shown again.
@@ -49,7 +104,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
     def select_node(self, line_nr, column_nr):
         """ Select the node give a line and column number
         """
-        found_item = self.find_item(self.invisibleRootItem(), [line_nr, column_nr])
+        found_item = self.find_item(self.invisibleRootItem(), (line_nr, column_nr))
         self.setCurrentItem(found_item) # Unselects if found_item is None
 
 
@@ -71,8 +126,6 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         """
         item_start_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS)
         item_end_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS)
-        # logger.debug("  find_item: {}: {!r} : {!r}"
-        #              .format(tree_item.text(SyntaxTreeWidget.COL_NODE), item_start_pos, item_end_pos))
 
         # See if one of the children matches
         for childIdx in range(tree_item.childCount()):
@@ -90,7 +143,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         return None
 
 
-    def populate(self, syntax_tree, root_label=''):
+    def populate(self, syntax_tree, last_pos, root_label=''):
         """ Populates the tree widget.
 
             :param syntax_tree: result of the ast.parse() function
@@ -113,28 +166,33 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             node_item = QtWidgets.QTreeWidgetItem(parent_item)
 
             if hasattr(ast_node, 'lineno'):
-                position_str = "{:d} : {:d}".format(ast_node.lineno, ast_node.col_offset)
+                node_item.setData(SyntaxTreeWidget.COL_POS, ROLE_POS,
+                                  (ast_node.lineno, ast_node.col_offset))
 
-                # If we find a new position string we set the items found since the last time
-                # to 'old_line : old_col : new_line : new_col' and reset the list
-                # of to-be-updated nodes
-                if ast_node.lineno != to_pos[IDX_LINE] or ast_node.col_offset != to_pos[IDX_COL]:
 
-                    # We cannot just say from_pos = to_pos, this creates a new from_pos variable.
-                    # A special quirk of Python is that – if no global statement is in effect –
-                    # assignments to names always go into the innermost scope.
-                    from_pos[IDX_LINE], from_pos[IDX_COL] = to_pos[IDX_LINE], to_pos[IDX_COL]
-                    to_pos[IDX_LINE], to_pos[IDX_COL] = ast_node.lineno, ast_node.col_offset
-                    for elem in to_be_updated:
-                        elem.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, from_pos)
-                        elem.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, to_pos)
-
-                    to_be_updated[:] = [node_item]
-                else:
-                    to_be_updated.append(node_item)
-            else:
-                to_be_updated.append(node_item)
-                position_str = ""
+            # if hasattr(ast_node, 'lineno'):
+            #     position_str = "{:d} : {:d}".format(ast_node.lineno, ast_node.col_offset)
+            #
+            #     # If we find a new position string we set the items found since the last time
+            #     # to 'old_line : old_col : new_line : new_col' and reset the list
+            #     # of to-be-updated nodes
+            #     if ast_node.lineno != to_pos[IDX_LINE] or ast_node.col_offset != to_pos[IDX_COL]:
+            #
+            #         # We cannot just say from_pos = to_pos, this creates a new from_pos variable.
+            #         # A special quirk of Python is that – if no global statement is in effect –
+            #         # assignments to names always go into the innermost scope.
+            #         from_pos[IDX_LINE], from_pos[IDX_COL] = to_pos[IDX_LINE], to_pos[IDX_COL]
+            #         to_pos[IDX_LINE], to_pos[IDX_COL] = ast_node.lineno, ast_node.col_offset
+            #         for elem in to_be_updated:
+            #             elem.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, from_pos)
+            #             elem.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, to_pos)
+            #
+            #         to_be_updated[:] = [node_item]
+            #     else:
+            #         to_be_updated.append(node_item)
+            # else:
+            #     to_be_updated.append(node_item)
+            #     position_str = ""
 
             # Recursively descent the AST
             if isinstance(ast_node, ast.AST):
@@ -155,36 +213,78 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             node_item.setText(SyntaxTreeWidget.COL_FIELD, field_label)
             node_item.setText(SyntaxTreeWidget.COL_CLASS, class_name(ast_node))
             node_item.setText(SyntaxTreeWidget.COL_VALUE, value_str)
-            node_item.setText(SyntaxTreeWidget.COL_POS, position_str)
 
             return node_item
 
         # End of helper function
 
         root_item = add_node(syntax_tree, self, root_label)
+        self._populateItemSpan(self.invisibleRootItem())
+        self._populateItemSpan3(self.invisibleRootItem(), last_pos)
+        self._populateTextFromData(self.invisibleRootItem())
+
         self.setCurrentItem(root_item)
         self.expandToDepth(1)
         #self.expandAll()
 
-        # Fill highlight column for remainder of nodes
-        for elem in to_be_updated:
-            elem.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, to_pos)
-            #elem.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, to_pos) # TODO: what here?
 
-        self._populateHighLightColumn(self.invisibleRootItem())
-
-
-    def _populateHighLightColumn(self, tree_item):
-        """ Fills the highlight column text
+    def _populateItemSpan(self, tree_item):
+        """ Fills the highlight span given the positions
         """
+        pos = tree_item.data(SyntaxTreeWidget.COL_POS, ROLE_POS)
+        tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, pos)
+
+        # Recursively populate
+        for childIdx in range(tree_item.childCount(), 0, -1):
+            child_item = tree_item.child(childIdx-1)
+            self._populateItemSpan(child_item)
+
+
+
+    def _populateItemSpan3(self, tree_item, last_pos):
+        """ Fills the highlight span given the positions
+        """
+        min_last_pos = last_pos
+        # Recursively populate
+        for childIdx in range(tree_item.childCount(), 0, -1):
+            child_item = tree_item.child(childIdx-1)
+            last_pos = self._populateItemSpan3(child_item, last_pos)
+
+        pos = tree_item.data(SyntaxTreeWidget.COL_POS, ROLE_POS)
+        if pos is not None:
+            tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, min_last_pos)
+            last_pos = pos
+
+        return last_pos
+
+
+    def _populateTextFromData(self, tree_item):
+        """ Fills the pos and highlight columns given the underlying data.
+        """
+        # Update the pos column
+        pos = tree_item.data(SyntaxTreeWidget.COL_POS, ROLE_POS)
+        if pos is None:
+            text = ""
+        else:
+            text = "{0[0]}:{0[1]}".format(pos)
+
+        tree_item.setText(SyntaxTreeWidget.COL_POS, text)
+
+        # Update the highlight column
         start_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS)
         end_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS)
 
-        if start_pos is not None and end_pos is not None:
-            tree_item.setText(SyntaxTreeWidget.COL_HIGHLIGHT,
-                              "{0[0]}:{0[1]} : {1[0]}:{1[1]}".format(start_pos, end_pos))
+        text = ""
+
+        if start_pos is not None:
+            text += "{0[0]}:{0[1]}".format(start_pos)
+
+        if end_pos is not None:
+            text += " : {0[0]}:{0[1]}".format(end_pos)
+
+        tree_item.setText(SyntaxTreeWidget.COL_HIGHLIGHT, text)
 
         # Recursively populate
         for childIdx in range(tree_item.childCount()):
             child_item = tree_item.child(childIdx)
-            self._populateHighLightColumn(child_item)
+            self._populateTextFromData(child_item)
