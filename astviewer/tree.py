@@ -219,8 +219,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         # End of helper function
 
         root_item = add_node(syntax_tree, self, root_label)
-        self._populateItemSpan(self.invisibleRootItem())
-        self._populateItemSpan3(self.invisibleRootItem(), last_pos)
+        self._populatePosItems(self.invisibleRootItem(), last_pos)
         self._populateTextFromData(self.invisibleRootItem())
 
         self.setCurrentItem(root_item)
@@ -228,32 +227,24 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         #self.expandAll()
 
 
-    def _populateItemSpan(self, tree_item):
-        """ Fills the highlight span given the positions
-        """
-        pos = tree_item.data(SyntaxTreeWidget.COL_POS, ROLE_POS)
-        tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, pos)
+    def _populatePosItems(self, tree_item, last_pos):
+        """ Fills the highlight span for items that have a position defined
 
-        # Recursively populate
+            Walk depth-first and backwards through the nodes, so that we can keep track of the
+            end of the span (last_pot)
+        """
+        max_last_pos = last_pos # The maximum last_pos at this level of recursion.
+
         for childIdx in range(tree_item.childCount(), 0, -1):
             child_item = tree_item.child(childIdx-1)
-            self._populateItemSpan(child_item)
-
-
-
-    def _populateItemSpan3(self, tree_item, last_pos):
-        """ Fills the highlight span given the positions
-        """
-        min_last_pos = last_pos
-        # Recursively populate
-        for childIdx in range(tree_item.childCount(), 0, -1):
-            child_item = tree_item.child(childIdx-1)
-            last_pos = self._populateItemSpan3(child_item, last_pos)
+            last_pos = self._populatePosItems(child_item, last_pos)
 
         pos = tree_item.data(SyntaxTreeWidget.COL_POS, ROLE_POS)
         if pos is not None:
-            tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, min_last_pos)
             last_pos = pos
+
+        tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, last_pos)
+        tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, max_last_pos)
 
         return last_pos
 
