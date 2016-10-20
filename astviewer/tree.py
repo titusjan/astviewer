@@ -5,7 +5,7 @@ from __future__ import print_function
 import ast, logging
 
 from astviewer.misc import class_name
-from astviewer.qtpy import QtCore, QtGui, QtWidgets
+from astviewer.qtpy import QtCore, QtWidgets
 from astviewer.toggle_column_mixin import ToggleColumnTreeWidget
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ def cmpIdx(idx0, idx1):
     assert idx0 == None or idx0 == -1 or idx0 >=0, \
         "Idx0 should be None, -1 or >= 0. Got: {!r}".format(idx0)
     assert idx1 == None or idx1 == -1 or idx1 >=0, \
-        "Idx1 should be None, -1 or >= 0. Got: {!r}".format(idx2)
+        "Idx1 should be None, -1 or >= 0. Got: {!r}".format(idx1)
 
     # Handle -1 the same way as None
     if idx0 == -1:
@@ -51,7 +51,7 @@ def cmpIdx(idx0, idx1):
         return -1 if idx0 < idx1 else 1
 
 
-def firstPos(pos0, pos1):
+def smallest(pos0, pos1):
     """ Returns the first (minimum) of the two posistions
 
         :param pos0: (line_nr, col_nr)
@@ -71,6 +71,27 @@ def firstPos(pos0, pos1):
             return pos1
         else:
             return pos0 # positions are the same. return either one of them
+
+def largest(pos0, pos1):
+    """ Returns the first (minimum) of the two posistions
+
+        :param pos0: (line_nr, col_nr)
+        :param pos1: (line_nr, col_nr)
+        :return: (line_nr, col_nr)
+    """
+    cmpLineNr = cmpIdx(pos0[0], pos1[0])
+    if cmpLineNr < 0:
+        return pos1
+    elif cmpLineNr > 0:
+        return pos0
+    else:
+        cmpColNr = cmpIdx(pos0[1], pos1[1])
+        if cmpColNr < 0:
+            return pos1
+        elif cmpColNr > 0:
+            return pos0
+        else:
+            return pos1 # positions are the same. return either one of them
 
 
 class SyntaxTreeWidget(ToggleColumnTreeWidget):
@@ -179,7 +200,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             #     if ast_node.lineno != to_pos[IDX_LINE] or ast_node.col_offset != to_pos[IDX_COL]:
             #
             #         # We cannot just say from_pos = to_pos, this creates a new from_pos variable.
-            #         # A special quirk of Python is that – if no global statement is in effect –
+            #         # A special quirk of Python is that - if no global statement is in effect -
             #         # assignments to names always go into the innermost scope.
             #         from_pos[IDX_LINE], from_pos[IDX_COL] = to_pos[IDX_LINE], to_pos[IDX_COL]
             #         to_pos[IDX_LINE], to_pos[IDX_COL] = ast_node.lineno, ast_node.col_offset
@@ -227,26 +248,58 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         #self.expandAll()
 
 
+    # # OLD
+    # def _populatePosItems(self, tree_item, last_pos):
+    #     """ Fills the highlight span for items that have a position defined
+    #
+    #         Walk depth-first and backwards through the nodes, so that we can keep track of the
+    #         end of the span (last_pot)
+    #     """
+    #     max_last_pos = last_pos # The maximum last_pos at this level of recursion.
+    #
+    #     for childIdx in range(tree_item.childCount(), 0, -1):
+    #         child_item = tree_item.child(childIdx-1)
+    #         last_pos = self._populatePosItems(child_item, last_pos)
+    #
+    #     pos = tree_item.data(SyntaxTreeWidget.COL_POS, ROLE_POS)
+    #     if pos is not None:
+    #         last_pos = pos
+    #
+    #     tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, last_pos)
+    #     tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, max_last_pos)
+    #
+    #     return last_pos
+
+    # NEW
     def _populatePosItems(self, tree_item, last_pos):
         """ Fills the highlight span for items that have a position defined
 
             Walk depth-first and backwards through the nodes, so that we can keep track of the
             end of the span (last_pot)
         """
-        max_last_pos = last_pos # The maximum last_pos at this level of recursion.
+        import copy
+        max_pos = copy.copy(last_pos) # The maximum last_pos at this level of recursion.
+        min_pos = (None, None)
 
         for childIdx in range(tree_item.childCount(), 0, -1):
             child_item = tree_item.child(childIdx-1)
             last_pos = self._populatePosItems(child_item, last_pos)
+            min_pos = copy.copy(smallest(min_pos, last_pos))
+            max_pos = copy.copy(largest(max_pos, last_pos))
 
         pos = tree_item.data(SyntaxTreeWidget.COL_POS, ROLE_POS)
         if pos is not None:
+            min_pos = copy.copy(smallest(min_pos, pos))
+            max_pos = copy.copy(largest(max_pos, pos))
             last_pos = pos
 
-        tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, last_pos)
-        tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, max_last_pos)
+        if min_pos != (None, None):
+            tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, min_pos)
+            tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, max_pos)
 
         return last_pos
+
+
 
 
     def _populateTextFromData(self, tree_item):
@@ -279,3 +332,6 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         for childIdx in range(tree_item.childCount()):
             child_item = tree_item.child(childIdx)
             self._populateTextFromData(child_item)
+
+if __name__ == "__main__":
+    print(smallest((None, None), (3, 4)))
