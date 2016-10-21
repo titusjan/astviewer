@@ -188,6 +188,7 @@ class AstViewer(QtWidgets.QMainWindow):
 
         try:
             syntax_tree = ast.parse(self._source_code, filename=self._file_name, mode=self._mode)
+            ast.fix_missing_locations(syntax_tree) # Doesn't seem to do anything.
         except Exception as ex:
             if DEBUGGING:
                 raise
@@ -239,9 +240,8 @@ class AstViewer(QtWidgets.QMainWindow):
                 logger.warning("No span founc for item. Unselecting text.")
 
         if from_pos is None or to_pos is None:
-            logger.debug("Unselecting text")
+            pass # unselecting text
         else:
-            logger.debug("selecting text: {} -> {}".format(from_pos, to_pos))
             self.editor.select_text(from_pos, to_pos)
 
 
