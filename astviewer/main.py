@@ -76,8 +76,8 @@ class AstViewer(QtWidgets.QMainWindow):
         self._mode = mode
         
         # Views
-        self._setup_menu()
         self._setup_views(reset=reset)
+        self._setup_menu()
         self.setWindowTitle('{}'.format(PROGRAM_NAME))
         
         # Update views
@@ -106,6 +106,16 @@ class AstViewer(QtWidgets.QMainWindow):
             file_menu.addAction("&Test", self.my_test, "Ctrl+T")
         
         self.view_menu = self.menuBar().addMenu("&View")
+        self.header_menu = self.view_menu.addMenu("&Tree Columns")
+
+        # Add toggling of tree columns to the View menu
+        for action in self.ast_tree.get_header_context_menu_actions():
+            self.header_menu.addAction(action)
+
+        self.expand_menu = self.view_menu.addMenu("&Expand")
+        self.expand_menu.addAction('Reset', self.ast_tree.expand_reset, "Ctrl+=")
+        self.expand_menu.addAction('Collapse all', self.ast_tree.collapseAll, "Ctrl+-")
+        self.expand_menu.addAction('Expand all', self.ast_tree.expandAll, "Ctrl++")
 
         self.menuBar().addSeparator()
         help_menu = self.menuBar().addMenu("&Help")
@@ -125,9 +135,6 @@ class AstViewer(QtWidgets.QMainWindow):
         self.ast_tree = SyntaxTreeWidget()
         self.central_splitter.addWidget(self.ast_tree)
 
-        # Add toggling of tree columns to the View menu
-        for action in self.ast_tree.get_header_context_menu_actions():
-            self.view_menu.addAction(action)
 
         self.editor = SourceEditor()
         self.central_splitter.addWidget(self.editor)
@@ -221,7 +228,7 @@ class AstViewer(QtWidgets.QMainWindow):
             self.ast_tree.setCurrentItem(root_item)
             #self.ast_tree.expandToDepth(2)
             #self.ast_tree.expandAll()
-            self.ast_tree.expand_classes()
+            self.ast_tree.expand_reset()
 
         
                 

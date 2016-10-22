@@ -96,7 +96,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
 
 
     @QtCore.Slot()
-    def expand_classes(self, tree_item=None):
+    def expand_reset(self, tree_item=None):
         """ Expands all classes and body lists so that functions and methods show
         """
         if tree_item is None:
@@ -110,7 +110,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
 
         # Expand children recursively
         for childIdx in range(tree_item.childCount()):
-            self.expand_classes(tree_item.child(childIdx))
+            self.expand_reset(tree_item.child(childIdx))
 
 
     @QtCore.Slot(int, int)
@@ -211,6 +211,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             node_item.setToolTip(SyntaxTreeWidget.COL_NODE, node_str)
             node_item.setToolTip(SyntaxTreeWidget.COL_FIELD, field_label)
             node_item.setToolTip(SyntaxTreeWidget.COL_CLASS, class_name(ast_node))
+            node_item.setToolTip(SyntaxTreeWidget.COL_VALUE, value_str)
 
             return node_item
 
