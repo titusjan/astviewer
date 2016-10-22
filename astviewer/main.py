@@ -7,7 +7,7 @@ import sys, logging, ast, traceback
 
 from astviewer.misc import get_qapplication_instance, get_qsettings
 from astviewer.misc import ABOUT_MESSAGE, PROGRAM_NAME, DEBUGGING
-from astviewer.qtpy import QtCore, QtWidgets
+from astviewer.qtpy import QtCore, QtGui, QtWidgets
 from astviewer.qtpy.compat import getopenfilename
 from astviewer.editor import SourceEditor
 from astviewer.tree import SyntaxTreeWidget
@@ -89,6 +89,9 @@ class AstViewer(QtWidgets.QMainWindow):
 
         self._update_widgets()
 
+        # Read persistent settings
+        self._readViewSettings(reset = reset)
+
 
     def _setup_menu(self):
         """ Sets up the main menu.
@@ -112,6 +115,10 @@ class AstViewer(QtWidgets.QMainWindow):
     def _setup_views(self, reset=False):
         """ Creates the UI widgets. 
         """
+        self.file_dialog = QtWidgets.QFileDialog(parent=self, caption="Open File")
+        self.file_dialog.setFileMode(QtWidgets.QFileDialog.ExistingFile)
+        self.file_dialog.setNameFilter("Python Files (*.py);;All Files (*)")
+
         self.central_splitter = QtWidgets.QSplitter(self, orientation = QtCore.Qt.Horizontal)
         self.setCentralWidget(self.central_splitter)
 
@@ -130,9 +137,6 @@ class AstViewer(QtWidgets.QMainWindow):
         self.central_splitter.setSizes([600, 500])
         self.central_splitter.setStretchFactor(0, 0.5)
         self.central_splitter.setStretchFactor(1, 0.5)
-
-        # Read persistent settings
-        self._readViewSettings(reset = reset)
 
         # Connect signals
         self.ast_tree.currentItemChanged.connect(self.highlight_node)
@@ -162,8 +166,12 @@ class AstViewer(QtWidgets.QMainWindow):
         if not file_name:
             file_name = self._get_file_name_from_dialog()
 
-        if file_name:
-            self._load_file(file_name)
+            if not file_name:
+                logger.debug("Open file canceled.")
+                return # user pressed cancel
+
+        self.close_file() # Close any old file.
+        self._load_file(file_name)
 
         self._update_widgets()
 
@@ -171,14 +179,23 @@ class AstViewer(QtWidgets.QMainWindow):
     def _get_file_name_from_dialog(self):
         """ Opens a file dialog and returns the file name selected by the user
         """
-        file_name, _ = getopenfilename(self, "Open File", '', "Python Files (*.py);;All Files (*)")
-        return file_name
+        # file_name, _ = getopenfilename(self, "Open File", '', "Python Files (*.py);;All Files (*)")
+        logger.debug("_get_file_name_from_dialog, directory: {}".format(self.file_dialog.directory().path()))
+        self.file_dialog.exec_()
+        files = self.file_dialog.selectedFiles()
+
+        if len(files) == 0:
+            return None
+        elif len(files) == 1:
+            return files[0]
+        else:
+            assert False, "Bug: more than one file selected."
 
     
     def _update_widgets(self):
         """ Updates the tree and editor widgets.
         """            
-        self.setWindowTitle('{} - {}'.format(PROGRAM_NAME, self._file_name))
+        self.setWindowTitle('{} - {}'.format(self._file_name, PROGRAM_NAME))
         self.editor.setPlainText(self._source_code)
 
         if not self._source_code:
@@ -266,6 +283,15 @@ class AstViewer(QtWidgets.QMainWindow):
             logger.debug("Reading view settings")
             settings = get_qsettings()
             settings.beginGroup('view')
+            dialog_state = settings.value("file_dialog/state")
+            if dialog_state:
+                dialog_restored = self.file_dialog.restoreState(dialog_state)
+                if not dialog_restored:
+                    logger.warning("Unable to restore open-file dialog settings.")
+
+            # restoreState doesn't seem to restore the directory so do it ourselves.
+            self.file_dialog.setDirectory(settings.value("file_dialog/dir"))
+
             pos = settings.value("main_window/pos", pos)
             window_size = settings.value("main_window/size", window_size)
             splitter_state = settings.value("central_splitter/state")
@@ -273,6 +299,7 @@ class AstViewer(QtWidgets.QMainWindow):
                 self.central_splitter.restoreState(splitter_state)
             header_restored = self.ast_tree.read_view_settings('tree/header_state', settings, reset)
             settings.endGroup()
+
 
         if not header_restored:
             header.resizeSection(SyntaxTreeWidget.COL_NODE, 250)
@@ -298,6 +325,8 @@ class AstViewer(QtWidgets.QMainWindow):
         settings = get_qsettings()
         settings.beginGroup('view')
         self.ast_tree.write_view_settings("tree/header_state", settings)
+        settings.setValue("file_dialog/state", self.file_dialog.saveState())
+        settings.setValue("file_dialog/dir", self.file_dialog.directory().path())
         settings.setValue("central_splitter/state", self.central_splitter.saveState())
         settings.setValue("main_window/pos", self.pos())
         settings.setValue("main_window/size", self.size())

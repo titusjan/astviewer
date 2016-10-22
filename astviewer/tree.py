@@ -3,6 +3,7 @@
 from __future__ import print_function
 
 import ast, logging
+import os.path
 
 from astviewer.misc import class_name
 from astviewer.qtpy import QtCore, QtGui, QtWidgets
@@ -201,19 +202,27 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
                 value_str = repr(ast_node)
                 node_str = "{} = {}".format(field_label, value_str)
 
+
             node_item.setText(SyntaxTreeWidget.COL_NODE, node_str)
             node_item.setText(SyntaxTreeWidget.COL_FIELD, field_label)
             node_item.setText(SyntaxTreeWidget.COL_CLASS, class_name(ast_node))
             node_item.setText(SyntaxTreeWidget.COL_VALUE, value_str)
+
+            node_item.setToolTip(SyntaxTreeWidget.COL_NODE, node_str)
+            node_item.setToolTip(SyntaxTreeWidget.COL_FIELD, field_label)
+            node_item.setToolTip(SyntaxTreeWidget.COL_CLASS, class_name(ast_node))
 
             return node_item
 
         # End of helper function
 
         root_item = add_node(syntax_tree, self, root_label)
+        root_item.setToolTip(SyntaxTreeWidget.COL_NODE, os.path.realpath(root_label))
+
         self._populate_highlighting_pass_1(self.invisibleRootItem(), last_pos)
         self._populate_highlighting_pass_2(self.invisibleRootItem())
         self._populate_text_from_data(self.invisibleRootItem())
+
 
         return root_item
 
