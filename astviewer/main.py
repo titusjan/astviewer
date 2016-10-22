@@ -5,9 +5,9 @@ from __future__ import print_function
                 
 import sys, logging, ast, traceback
 
-from astviewer.misc import get_qapplication_instance, class_name, get_qsettings
+from astviewer.misc import get_qapplication_instance, get_qsettings
 from astviewer.misc import ABOUT_MESSAGE, PROGRAM_NAME, DEBUGGING
-from astviewer.qtpy import QtCore, QtGui, QtWidgets
+from astviewer.qtpy import QtCore, QtWidgets
 from astviewer.qtpy.compat import getopenfilename
 from astviewer.editor import SourceEditor
 from astviewer.tree import SyntaxTreeWidget
@@ -27,9 +27,9 @@ def view(*args, **kwargs):
     if 'darwin' in sys.platform:
         window.raise_()
         
-    logger.info("Starting the AST event loop.")
+    logger.info("Starting {} the event loop.".format(PROGRAM_NAME))
     exit_code = app.exec_()
-    logger.info("AST viewer done...")
+    logger.info("{} viewer done...".format(PROGRAM_NAME))
     return exit_code
 
 
@@ -200,7 +200,11 @@ class AstViewer(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.warning(self, 'error', msg)
         else:
             last_pos = self.editor.get_last_pos()
-            self.ast_tree.populate(syntax_tree, last_pos, root_label=self._file_name)
+            root_item = self.ast_tree.populate(syntax_tree, last_pos, root_label=self._file_name)
+            self.ast_tree.setCurrentItem(root_item)
+            #self.ast_tree.expandToDepth(2)
+            #self.ast_tree.expandAll()
+            self.ast_tree.expand_classes()
 
         
                 

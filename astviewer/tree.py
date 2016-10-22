@@ -28,7 +28,7 @@ def cmpIdx(idx0, idx1):
 
         :param idx0: positive int, -1 or None
         :param idx2: positive int, -1 or None
-        :return: bool
+        :return: int
     """
     assert idx0 == None or idx0 == -1 or idx0 >=0, \
         "Idx0 should be None, -1 or >= 0. Got: {!r}".format(idx0)
@@ -50,48 +50,22 @@ def cmpIdx(idx0, idx1):
     else:
         return -1 if idx0 < idx1 else 1
 
+    
+def cmpPos(pos0, pos1):
+    """ Returns negative if pos0 < pos1, zero if pos0 == pos1 and strictly positive if pos0 > pos1.
 
-def smallest(pos0, pos1):
-    """ Returns the first (minimum) of the two posistions
+        If an pos0 or pos1 equals -1 or None, it is interpreted as the last element in a list
+        and thus larger than a positive integer
 
-        :param pos0: (line_nr, col_nr)
-        :param pos1: (line_nr, col_nr)
-        :return: (line_nr, col_nr)
+        :param pos0: positive int, -1 or None
+        :param pos2: positive int, -1 or None
+        :return: int
     """
     cmpLineNr = cmpIdx(pos0[0], pos1[0])
-    if cmpLineNr < 0:
-        return pos0
-    elif cmpLineNr > 0:
-        return pos1
+    if cmpLineNr != 0:
+        return cmpLineNr
     else:
-        cmpColNr = cmpIdx(pos0[1], pos1[1])
-        if cmpColNr < 0:
-            return pos0
-        elif cmpColNr > 0:
-            return pos1
-        else:
-            return pos0 # positions are the same. return either one of them
-
-def largest(pos0, pos1):
-    """ Returns the first (minimum) of the two posistions
-
-        :param pos0: (line_nr, col_nr)
-        :param pos1: (line_nr, col_nr)
-        :return: (line_nr, col_nr)
-    """
-    cmpLineNr = cmpIdx(pos0[0], pos1[0])
-    if cmpLineNr < 0:
-        return pos1
-    elif cmpLineNr > 0:
-        return pos0
-    else:
-        cmpColNr = cmpIdx(pos0[1], pos1[1])
-        if cmpColNr < 0:
-            return pos1
-        elif cmpColNr > 0:
-            return pos0
-        else:
-            return pos1 # positions are the same. return either one of them
+        return cmpIdx(pos0[1], pos1[1])
 
 
 class SyntaxTreeWidget(ToggleColumnTreeWidget):
@@ -120,6 +94,23 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         tree_header.setStretchLastSection(False)
 
 
+    @QtCore.Slot()
+    def expand_classes(self, tree_item=None):
+        """ Expands all classes and body lists so that functions and methods show
+        """
+        if tree_item is None:
+            tree_item = self.invisibleRootItem()
+
+        field = tree_item.text(SyntaxTreeWidget.COL_FIELD)
+        klass = tree_item.text(SyntaxTreeWidget.COL_CLASS)
+
+        tree_item.setExpanded(field == 'body' or
+                              klass in ('Module', 'ClassDef'))
+
+        # Expand children recursively
+        for childIdx in range(tree_item.childCount()):
+            self.expand_classes(tree_item.child(childIdx))
+
 
     @QtCore.Slot(int, int)
     def select_node(self, line_nr, column_nr):
@@ -140,11 +131,13 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
 
 
     def find_item(self, tree_item, position):
-        """ Finds the deepest node item that highlights the position at line_nr column_nr
+        """ Finds the deepest node item that highlights the position at line_nr column_nr and
+            has a position defined itself.
 
             :param tree_item: look within this QTreeWidgetItem and its child items
             :param position: [line_nr, column_nr] list
         """
+        item_pos = tree_item.data(SyntaxTreeWidget.COL_POS, ROLE_POS)
         item_start_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS)
         item_end_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS)
 
@@ -157,7 +150,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
 
         # If start_pos < position < end_pos the current node matches.
         if item_start_pos is not None and item_end_pos is not None:
-            if item_start_pos < position < item_end_pos:
+            if item_pos is not None and item_start_pos < position < item_end_pos:
                 return tree_item
 
         # No matching node found in this subtree
@@ -183,34 +176,9 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
 
                 :param parent_item: The parent QTreeWidgetItem to which this node will be added
                 :param field_label: Labels how this node is known to the parent
+                :return: the QTreeWidgetItem that corresonds to the root item of the AST
             """
             node_item = QtWidgets.QTreeWidgetItem(parent_item)
-
-
-
-            # if hasattr(ast_node, 'lineno'):
-            #     position_str = "{:d} : {:d}".format(ast_node.lineno, ast_node.col_offset)
-            #
-            #     # If we find a new position string we set the items found since the last time
-            #     # to 'old_line : old_col : new_line : new_col' and reset the list
-            #     # of to-be-updated nodes
-            #     if ast_node.lineno != to_pos[IDX_LINE] or ast_node.col_offset != to_pos[IDX_COL]:
-            #
-            #         # We cannot just say from_pos = to_pos, this creates a new from_pos variable.
-            #         # A special quirk of Python is that - if no global statement is in effect -
-            #         # assignments to names always go into the innermost scope.
-            #         from_pos[IDX_LINE], from_pos[IDX_COL] = to_pos[IDX_LINE], to_pos[IDX_COL]
-            #         to_pos[IDX_LINE], to_pos[IDX_COL] = ast_node.lineno, ast_node.col_offset
-            #         for elem in to_be_updated:
-            #             elem.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, from_pos)
-            #             elem.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, to_pos)
-            #
-            #         to_be_updated[:] = [node_item]
-            #     else:
-            #         to_be_updated.append(node_item)
-            # else:
-            #     to_be_updated.append(node_item)
-            #     position_str = ""
 
             # Recursively descent the AST
             if isinstance(ast_node, ast.AST):
@@ -243,17 +211,15 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         # End of helper function
 
         root_item = add_node(syntax_tree, self, root_label)
-        self._populatePosItems(self.invisibleRootItem(), last_pos)
-        self._populateTextFromData(self.invisibleRootItem())
+        self._populate_highlighting_pass_1(self.invisibleRootItem(), last_pos)
+        self._populate_highlighting_pass_2(self.invisibleRootItem())
+        self._populate_text_from_data(self.invisibleRootItem())
 
-        self.setCurrentItem(root_item)
-        self.expandToDepth(1)
-        #self.expandAll()
+        return root_item
 
 
-    # OLD
-    def _populatePosItems(self, tree_item, last_pos):
-        """ Fills the highlight span for items that have a position defined
+    def _populate_highlighting_pass_1(self, tree_item, last_pos):
+        """ Fills the highlight span for items that have a position defined. (pass 1)
 
             Walk depth-first and backwards through the nodes, so that we can keep track of the
             end of the span (last_pot)
@@ -262,91 +228,56 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
 
         for childIdx in range(tree_item.childCount(), 0, -1):
             child_item = tree_item.child(childIdx-1)
-            children_last_pos = self._populatePosItems(child_item, last_pos)
+            children_last_pos = self._populate_highlighting_pass_1(child_item, last_pos)
+
+            # Decorator nodes seem to be out-of order in the tree. They occur after the body but
+            # their line number is smaller. This messes up the highlight spans so we don't
+            # propagate their value
             if tree_item.text(SyntaxTreeWidget.COL_FIELD) != u'decorator_list':
                 last_pos = children_last_pos
-            else:
-                logger.warning("Ignore decorator line:col in further tree walk: {}"
-                               .format(children_last_pos))
 
         pos = tree_item.data(SyntaxTreeWidget.COL_POS, ROLE_POS)
         if pos is not None:
             last_pos = pos
 
-        tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, last_pos)
-        tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, max_last_pos)
-        if max_last_pos < last_pos:
+        assert last_pos is not None
+        assert max_last_pos is not None
+        cmp = cmpPos(last_pos, max_last_pos)
+        if cmp < 0:
+            tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, last_pos)
+            tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, max_last_pos)
+        elif cmp > 0:
             # This seems to occur when a function has decorators, which are located in the tree
-            # after the body but have a line number that is smaller. Don't know how to handle this.
-            logger.warn("Nodes out of order. Invalid highlighting set for line {}, col {}: {}"
-                        .format(last_pos[0], last_pos[1],
+            # after the body but have a line number that is smaller. Don't know how what to do.
+            logger.warn("Nodes out of order. Invalid highlighting {}:{} : {}:{} ({})"
+                        .format(last_pos[0], last_pos[1], max_last_pos[0], max_last_pos[1],
                                 tree_item.text(SyntaxTreeWidget.COL_NODE)))
+        else:
+            pass # No new position found in the children. These nodes will be filled in later.
 
         return last_pos
 
-    # # NEW
-    # def _populatePosItems(self, tree_item, last_pos):
-    #     """ Fills the highlight span for items that have a position defined
-    #
-    #         Walk depth-first and backwards through the nodes, so that we can keep track of the
-    #         end of the span (last_pot)
-    #     """
-    #     max_pos = last_pos # The maximum last_pos at this level of recursion.
-    #     min_pos = (None, None)
-    #
-    #     for childIdx in range(tree_item.childCount(), 0, -1):
-    #         child_item = tree_item.child(childIdx-1)
-    #         last_pos = self._populatePosItems(child_item, last_pos)
-    #         min_pos = smallest(min_pos, last_pos)
-    #         max_pos = largest(max_pos, last_pos)
-    #
-    #     pos = tree_item.data(SyntaxTreeWidget.COL_POS, ROLE_POS)
-    #     if pos is not None:
-    #         min_pos = smallest(min_pos, pos)
-    #         max_pos = largest(max_pos, pos)
-    #         last_pos = pos
-    #
-    #     if min_pos != (None, None):
-    #         tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, min_pos)
-    #         tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, max_pos)
-    #
-    #     return last_pos
+
+    @QtCore.Slot()
+    def _populate_highlighting_pass_2(self, tree_item, parent_start_pos=None, parent_end_pos=None):
+        """ Fill in the nodes that don't have a highlighting from their parent
+        """
+        start_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS)
+        end_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS)
+
+        # If the highlight span is still undefined use the value from the parent.
+        if (start_pos is None and end_pos is None):
+            start_pos = parent_start_pos
+            end_pos = parent_end_pos
+            tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, start_pos)
+            tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, end_pos)
+
+        # Populate children recursively
+        for childIdx in range(tree_item.childCount()):
+            self._populate_highlighting_pass_2(tree_item.child(childIdx), start_pos, end_pos)
 
 
-
-    # # NEW with copy
-    # def _populatePosItems(self, tree_item, last_pos):
-    #     """ Fills the highlight span for items that have a position defined
-    #
-    #         Walk depth-first and backwards through the nodes, so that we can keep track of the
-    #         end of the span (last_pot)
-    #     """
-    #     import copy
-    #     max_pos = copy.copy(last_pos) # The maximum last_pos at this level of recursion.
-    #     min_pos = (None, None)
-    #
-    #     for childIdx in range(tree_item.childCount(), 0, -1):
-    #         child_item = tree_item.child(childIdx-1)
-    #         last_pos = self._populatePosItems(child_item, last_pos)
-    #         min_pos = copy.copy(smallest(min_pos, last_pos))
-    #         max_pos = copy.copy(largest(max_pos, last_pos))
-    #
-    #     pos = tree_item.data(SyntaxTreeWidget.COL_POS, ROLE_POS)
-    #     if pos is not None:
-    #         min_pos = copy.copy(smallest(min_pos, pos))
-    #         max_pos = copy.copy(largest(max_pos, pos))
-    #         last_pos = pos
-    #
-    #     if min_pos != (None, None):
-    #         tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, min_pos)
-    #         tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, max_pos)
-    #
-    #     return last_pos
-    #
-    #
-
-
-    def _populateTextFromData(self, tree_item):
+    def _populate_text_from_data(self, tree_item):
         """ Fills the pos and highlight columns given the underlying data.
         """
         # Update the pos column
@@ -375,7 +306,5 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         # Recursively populate
         for childIdx in range(tree_item.childCount()):
             child_item = tree_item.child(childIdx)
-            self._populateTextFromData(child_item)
+            self._populate_text_from_data(child_item)
 
-if __name__ == "__main__":
-    print(smallest((None, None), (3, 4)))
