@@ -5,7 +5,7 @@ from __future__ import print_function
 import ast, logging
 
 from astviewer.misc import class_name
-from astviewer.qtpy import QtCore, QtWidgets
+from astviewer.qtpy import QtCore, QtGui, QtWidgets
 from astviewer.toggle_column_mixin import ToggleColumnTreeWidget
 
 logger = logging.getLogger(__name__)
@@ -252,6 +252,11 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             logger.warn("Nodes out of order. Invalid highlighting {}:{} : {}:{} ({})"
                         .format(last_pos[0], last_pos[1], max_last_pos[0], max_last_pos[1],
                                 tree_item.text(SyntaxTreeWidget.COL_NODE)))
+            tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, last_pos)
+            tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, max_last_pos)
+            tree_item.setForeground(SyntaxTreeWidget.COL_HIGHLIGHT,
+                                    QtGui.QBrush(QtGui.QColor('red')))
+
         else:
             pass # No new position found in the children. These nodes will be filled in later.
 
