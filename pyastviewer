@@ -5,7 +5,8 @@ Program that shows the program on the right and its abstract syntax tree (ast) o
 from __future__ import print_function
 
 import os
-os.environ.setdefault('QT_API', 'pyqt5')
+#os.environ.setdefault('QT_API', 'pyside')
+#os.environ.setdefault('QT_API', 'pyqt5')
 
 import sys, argparse, logging
 

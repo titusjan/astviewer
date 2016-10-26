@@ -6,7 +6,7 @@ import ast, logging
 import os.path
 
 from astviewer.iconfactory import IconFactory
-from astviewer.misc import class_name, icons_directory
+from astviewer.misc import class_name, check_class, icons_directory
 from astviewer.qtpy import QtCore, QtGui, QtWidgets
 from astviewer.toggle_column_mixin import ToggleColumnTreeWidget
 
@@ -153,11 +153,12 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             has a position defined itself.
 
             :param tree_item: look within this QTreeWidgetItem and its child items
-            :param position: [line_nr, column_nr] list
+            :param position: (line_nr, column_nr) tuple
         """
+        check_class(position, tuple)
         item_pos = tree_item.data(SyntaxTreeWidget.COL_POS, ROLE_POS)
-        item_start_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS)
-        item_end_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS)
+        item_start_pos = tuple(tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS))
+        item_end_pos = tuple(tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS))
 
         # See if one of the children matches
         for childIdx in range(tree_item.childCount()):
