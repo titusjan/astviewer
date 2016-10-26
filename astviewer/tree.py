@@ -5,7 +5,7 @@ from __future__ import print_function
 import ast, logging
 import os.path
 
-from astviewer.misc import class_name
+from astviewer.misc import class_name, icons_directory
 from astviewer.qtpy import QtCore, QtGui, QtWidgets
 from astviewer.toggle_column_mixin import ToggleColumnTreeWidget
 
@@ -93,6 +93,17 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         # Don't stretch last column, it doesn't play nice when columns are
         # hidden and then shown again.
         tree_header.setStretchLastSection(False)
+
+        self.iconAstNode = QtGui.QIcon(os.path.join(icons_directory(), "astnode.svg"), )
+        self.iconPyNode = QtGui.QIcon(os.path.join(icons_directory(), "pynode.svg"))
+        self.iconListNode = QtGui.QIcon(os.path.join(icons_directory(), "list-l.svg"))
+        # self.iconAstNode = QtGui.QIcon(os.path.join(icons_directory(), "star-empty.svg"))
+        # self.iconPyNode = QtGui.QIcon(os.path.join(icons_directory(), "pynode.svg"))
+        # self.iconListNode = QtGui.QIcon(os.path.join(icons_directory(), "list-l.svg"))
+
+
+        self.row_size_hint = QtCore.QSize()
+        self.row_size_hint.setHeight(20)
 
 
     @QtCore.Slot()
@@ -185,6 +196,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             if isinstance(ast_node, ast.AST):
                 value_str = ''
                 node_str = "{} = {}".format(field_label, class_name(ast_node))
+                node_item.setIcon(SyntaxTreeWidget.COL_NODE, self.iconAstNode)
 
                 if hasattr(ast_node, 'lineno'):
                     node_item.setData(SyntaxTreeWidget.COL_POS, ROLE_POS,
@@ -196,12 +208,14 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             elif isinstance(ast_node, (list, tuple)):
                 value_str = ''
                 node_str = "{} = {}".format(field_label, class_name(ast_node))
+                node_item.setIcon(SyntaxTreeWidget.COL_NODE, self.iconListNode)
+
                 for idx, elem in enumerate(ast_node):
                     add_node(elem, node_item, "{}[{:d}]".format(field_label, idx))
             else:
                 value_str = repr(ast_node)
                 node_str = "{} = {}".format(field_label, value_str)
-
+                node_item.setIcon(SyntaxTreeWidget.COL_NODE, self.iconPyNode)
 
             node_item.setText(SyntaxTreeWidget.COL_NODE, node_str)
             node_item.setText(SyntaxTreeWidget.COL_FIELD, field_label)
@@ -213,6 +227,9 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             node_item.setToolTip(SyntaxTreeWidget.COL_CLASS, class_name(ast_node))
             node_item.setToolTip(SyntaxTreeWidget.COL_VALUE, value_str)
 
+            # To force icon size in Python 2
+            node_item.setSizeHint(SyntaxTreeWidget.COL_NODE, self.row_size_hint)
+
             return node_item
 
         # End of helper function
@@ -223,7 +240,6 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         self._populate_highlighting_pass_1(self.invisibleRootItem(), last_pos)
         self._populate_highlighting_pass_2(self.invisibleRootItem())
         self._populate_text_from_data(self.invisibleRootItem())
-
 
         return root_item
 

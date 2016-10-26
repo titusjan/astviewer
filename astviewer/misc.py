@@ -1,6 +1,7 @@
 """ Miscellaneous routines and constants.
 """
 import logging, sys, traceback
+import os.path
 import astviewer.qtpy as qtpy
 import astviewer.qtpy._version as qtpy_version
 
@@ -18,6 +19,20 @@ QTPY_VERSION = '.'.join(map(str, qtpy_version.version_info))
 
 ABOUT_MESSAGE = ("{}: {}\n\nPython: {}\nQt API: {}"
                  .format(PROGRAM_NAME, PROGRAM_VERSION, PYTHON_VERSION, QT_API))
+
+
+
+def program_directory():
+    """ Returns the program directory where this program is installed
+    """
+    return os.path.abspath(os.path.dirname(__file__))
+
+
+def icons_directory():
+    """ Returns the program directory where this program is installed
+    """
+    return os.path.join(program_directory(), 'icons')
+
 
 ###########
 # Logging #
