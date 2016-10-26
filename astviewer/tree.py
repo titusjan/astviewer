@@ -5,6 +5,7 @@ from __future__ import print_function
 import ast, logging
 import os.path
 
+from astviewer.iconfactory import IconFactory
 from astviewer.misc import class_name, icons_directory
 from astviewer.qtpy import QtCore, QtGui, QtWidgets
 from astviewer.toggle_column_mixin import ToggleColumnTreeWidget
@@ -94,16 +95,21 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         # hidden and then shown again.
         tree_header.setStretchLastSection(False)
 
-        self.iconAstNode = QtGui.QIcon(os.path.join(icons_directory(), "astnode.svg"), )
-        self.iconPyNode = QtGui.QIcon(os.path.join(icons_directory(), "pynode.svg"))
-        self.iconListNode = QtGui.QIcon(os.path.join(icons_directory(), "list-l.svg"))
+        self.icon_factory = IconFactory.singleton()
+        self.iconAstNode = self.icon_factory.getIcon(IconFactory.AST_NODE)
+        self.iconPyNode = self.icon_factory.getIcon(IconFactory.PY_NODE)
+        self.iconListNode = self.icon_factory.getIcon(IconFactory.LIST_NODE)
+
+        # self.iconAstNode = QtGui.QIcon(os.path.join(icons_directory(), "astnode.svg"), )
+        # self.iconPyNode = QtGui.QIcon(os.path.join(icons_directory(), "pynode.svg"))
+        # self.iconListNode = QtGui.QIcon(os.path.join(icons_directory(), "list-l.svg"))
         # self.iconAstNode = QtGui.QIcon(os.path.join(icons_directory(), "star-empty.svg"))
         # self.iconPyNode = QtGui.QIcon(os.path.join(icons_directory(), "pynode.svg"))
         # self.iconListNode = QtGui.QIcon(os.path.join(icons_directory(), "list-l.svg"))
 
-
         self.row_size_hint = QtCore.QSize()
         self.row_size_hint.setHeight(20)
+        self.setIconSize(QtCore.QSize(20, 20))
 
 
     @QtCore.Slot()
@@ -229,6 +235,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
 
             # To force icon size in Python 2
             node_item.setSizeHint(SyntaxTreeWidget.COL_NODE, self.row_size_hint)
+
 
             return node_item
 

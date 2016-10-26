@@ -7,9 +7,9 @@ import sys, logging, ast, traceback
 
 from astviewer.misc import get_qapplication_instance, get_qsettings
 from astviewer.misc import ABOUT_MESSAGE, PROGRAM_NAME, DEBUGGING
-from astviewer.qtpy import QtCore, QtGui, QtWidgets
-from astviewer.qtpy.compat import getopenfilename
+from astviewer.qtpy import QtCore, QtWidgets
 from astviewer.editor import SourceEditor
+
 from astviewer.tree import SyntaxTreeWidget
 
 
@@ -74,7 +74,7 @@ class AstViewer(QtWidgets.QMainWindow):
         self._file_name = '<source>'
         self._source_code = source_code
         self._mode = mode
-        
+
         # Views
         self._setup_views(reset=reset)
         self._setup_menu()
@@ -134,7 +134,6 @@ class AstViewer(QtWidgets.QMainWindow):
 
         self.ast_tree = SyntaxTreeWidget()
         self.central_splitter.addWidget(self.ast_tree)
-
 
         self.editor = SourceEditor()
         self.central_splitter.addWidget(self.editor)
@@ -226,11 +225,8 @@ class AstViewer(QtWidgets.QMainWindow):
             last_pos = self.editor.get_last_pos()
             root_item = self.ast_tree.populate(syntax_tree, last_pos, root_label=self._file_name)
             self.ast_tree.setCurrentItem(root_item)
-            #self.ast_tree.expandToDepth(2)
-            #self.ast_tree.expandAll()
             self.ast_tree.expand_reset()
 
-        
                 
     def _load_file(self, file_name):
         """ Opens a file and sets self._file_name and self._source code if succesful
@@ -247,12 +243,10 @@ class AstViewer(QtWidgets.QMainWindow):
                 
             self._file_name = file_name
             self._source_code = source_code
-            
         else:
             msg = "Unable to open file: {}".format(file_name)
             logger.warning(msg)
             QtWidgets.QMessageBox.warning(self, 'error', msg)
-            
 
 
     @QtCore.Slot(QtWidgets.QTreeWidgetItem, QtWidgets.QTreeWidgetItem)
@@ -306,7 +300,6 @@ class AstViewer(QtWidgets.QMainWindow):
                 self.central_splitter.restoreState(splitter_state)
             header_restored = self.ast_tree.read_view_settings('tree/header_state', settings, reset)
             settings.endGroup()
-
 
         if not header_restored:
             header.resizeSection(SyntaxTreeWidget.COL_NODE, 250)
