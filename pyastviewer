@@ -14,7 +14,7 @@ import sys, argparse, logging
 from astviewer.qtpy import QtCore, QtWidgets
 
 from astviewer.misc import logging_basic_config, handleException
-from astviewer.misc import PROGRAM_NAME, PROGRAM_VERSION, PYTHON_VERSION, QT_API
+from astviewer.misc import PROGRAM_NAME, PROGRAM_VERSION, PYTHON_VERSION, QT_API_NAME, QT_API
 from astviewer.main import view
 
 
@@ -29,7 +29,7 @@ def main():
     try:
         QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
     except Exception as ex:
-        pass
+        pass # Not availabe in PyQt4
 
     app = QtWidgets.QApplication(sys.argv) # to allow for Qt command line arguments
     remaining_argv = app.arguments()
@@ -58,7 +58,7 @@ def main():
     logging_basic_config(args.log_level.upper())
 
     logger.info('Started {} {}'.format(PROGRAM_NAME, PROGRAM_VERSION))
-    logger.info('Using Python {} and Qt API {}'.format(PYTHON_VERSION, QT_API))
+    logger.info('Using Python {} and {} (api={})'.format(PYTHON_VERSION, QT_API_NAME, QT_API))
 
     exit_code = view(file_name = args.file_name, mode = args.mode, reset = args.reset)
     logging.info('Done {}'.format(PROGRAM_NAME))

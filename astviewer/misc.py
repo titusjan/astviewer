@@ -2,7 +2,7 @@
 """
 import logging, sys, traceback
 import os.path
-import astviewer.qtpy as qtpy
+import astviewer.qtpy
 import astviewer.qtpy._version as qtpy_version
 
 from astviewer.qtpy import QtCore, QtWidgets
@@ -14,11 +14,12 @@ DEBUGGING = True
 PROGRAM_NAME = 'astview'
 PROGRAM_VERSION = '1.1.0-dev'
 PYTHON_VERSION = "%d.%d.%d" % (sys.version_info[0:3])
-QT_API = qtpy.API
+QT_API = astviewer.qtpy.API
+QT_API_NAME = astviewer.qtpy.API_NAME
 QTPY_VERSION = '.'.join(map(str, qtpy_version.version_info))
 
-ABOUT_MESSAGE = ("{}: {}\n\nPython: {}\nQt API: {}"
-                 .format(PROGRAM_NAME, PROGRAM_VERSION, PYTHON_VERSION, QT_API))
+ABOUT_MESSAGE = ("{}: {}\n\nPython: {}\n{} (api={})"
+                 .format(PROGRAM_NAME, PROGRAM_VERSION, PYTHON_VERSION, QT_API_NAME, QT_API))
 
 
 

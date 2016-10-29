@@ -219,8 +219,8 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             node_item.setToolTip(SyntaxTreeWidget.COL_CLASS, class_name(ast_node))
             node_item.setToolTip(SyntaxTreeWidget.COL_VALUE, value_str)
 
-            # To force icon size in Python 2 (not
-            node_item.setSizeHint(SyntaxTreeWidget.COL_NODE, self.row_size_hint)
+            # To force icon size in Python 2 (not needed)
+            #node_item.setSizeHint(SyntaxTreeWidget.COL_NODE, self.row_size_hint)
 
             return node_item
 
@@ -240,7 +240,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         """ Fills the highlight span for items that have a position defined. (pass 1)
 
             Walk depth-first and backwards through the nodes, so that we can keep track of the
-            end of the span (last_pot)
+            end of the span (last_pos)
         """
         max_last_pos = last_pos # The maximum last_pos at this level of recursion.
 
