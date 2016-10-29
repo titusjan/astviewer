@@ -8,7 +8,7 @@
 Provides QtSvg classes and functions.
 """
 
-from qtpy import PYQT5, PYQT4, PYSIDE, PythonQtError
+from astviewer.qtpy import PYQT5, PYQT4, PYSIDE, PythonQtError
 
 
 if PYQT5:
