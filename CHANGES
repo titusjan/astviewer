@@ -1,4 +1,4 @@
-????-??-??, Version 1.1.0
+2016-10-29, Version 1.1.0
 
 *   Works with Python 3.
 
@@ -10,10 +10,12 @@
 
 *   Clicking the text will select the corresponding node in the tree.
 
+*   Highlighting works recursively.
+
 
 2013-08-10, Version 1.0.0
 
-*    Added setup.py installer
+*   Added setup.py installer
 
 *   Made separate (pyasterviewer) command line application
     and (asterviewer.py) module.

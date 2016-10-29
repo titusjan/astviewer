@@ -44,7 +44,7 @@ class IconFactory(object):
         self.registerIcon(None, None) # no icon
         self.registerIcon("",   None) # no icon
         self.registerIcon("pynode.svg", IconFactory.PY_NODE)
-        self.registerIcon("star-empty.svg",   IconFactory.AST_NODE)
+        self.registerIcon("astnode.svg",   IconFactory.AST_NODE)
         self.registerIcon("list-l.svg", IconFactory.LIST_NODE)
 
 
