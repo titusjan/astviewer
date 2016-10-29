@@ -37,10 +37,10 @@ class SourceEditor(QtWidgets.QPlainTextEdit):
 
 
     def mousePressEvent(self, mouseEvent):
-        """ On mouse press the sigTextClicked(line_nr, column_nr) is emited.
+        """ On mouse press, the sigTextClicked(line_nr, column_nr) is emitted.
         """
         cursor = self.cursorForPosition(mouseEvent.pos())
-        # Since the word wrap is off, there is one block par line. BLock numbers are zero-based
+        # Since the word wrap is off, there is one block per line. Block numbers are zero-based
         # but code lines start at 1.
         self.sigTextClicked.emit(cursor.blockNumber() + 1, cursor.positionInBlock())
 
@@ -48,9 +48,9 @@ class SourceEditor(QtWidgets.QPlainTextEdit):
     def select_text(self, from_pos, to_line_pos):
         """ Selects a text in the range from_line:col ... to_line:col
 
-            from_pos and to_line_pos should be a (line, column) tuple
-            If from_pos is None, the selection starts at the beginning of the document
-            If to_line_pos is None, the selection goes to the end of the document
+            from_pos and to_line_pos should be a (line, column) tuple.
+            If from_pos is None, the selection starts at the beginning of the document.
+            If to_line_pos is None, the selection goes to the end of the document.
         """
         text_cursor = self.textCursor()
 
@@ -77,7 +77,7 @@ class SourceEditor(QtWidgets.QPlainTextEdit):
 
 
     def get_last_pos(self):
-        """ Gets the linenr and column of the last character
+        """ Gets the linenr and column of the last character.
         """
         text_cursor = self.textCursor()
         text_cursor.movePosition(QtGui.QTextCursor.End, QtGui.QTextCursor.MoveAnchor)

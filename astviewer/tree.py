@@ -6,7 +6,7 @@ import ast, logging
 import os.path
 
 from astviewer.iconfactory import IconFactory
-from astviewer.misc import class_name, check_class, icons_directory
+from astviewer.misc import class_name, check_class, DEBUGGING
 from astviewer.qtpy import QtCore, QtGui, QtWidgets
 from astviewer.toggle_column_mixin import ToggleColumnTreeWidget
 
@@ -56,8 +56,8 @@ def cmpIdx(idx0, idx1):
 def cmpPos(pos0, pos1):
     """ Returns negative if pos0 < pos1, zero if pos0 == pos1 and strictly positive if pos0 > pos1.
 
-        If an pos0 or pos1 equals -1 or None, it is interpreted as the last element in a list
-        and thus larger than a positive integer
+        If an index equals -1 or None, it is interpreted as the last element in a list and
+        therefore larger than a positive integer
 
         :param pos0: positive int, -1 or None
         :param pos2: positive int, -1 or None
@@ -71,7 +71,7 @@ def cmpPos(pos0, pos1):
 
 
 class SyntaxTreeWidget(ToggleColumnTreeWidget):
-    """ Source read-ony editor that can detect double clicks.
+    """ Tree widget that holds the AST.
     """
     HEADER_LABELS = ["Node", "Field", "Class", "Value", "Line : Col", "Highlight"]
     (COL_NODE, COL_FIELD, COL_CLASS, COL_VALUE, COL_POS, COL_HIGHLIGHT) = range(len(HEADER_LABELS))
@@ -91,21 +91,10 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         self.add_header_context_menu(checked={'Node': True}, checkable={'Node': True},
                                      enabled={'Node': False})
 
-        # Don't stretch last column, it doesn't play nice when columns are
-        # hidden and then shown again.
+        # Don't stretch last column, it doesn't play nice when columns hidden and then shown again.
         tree_header.setStretchLastSection(False)
 
         self.icon_factory = IconFactory.singleton()
-        self.iconAstNode = self.icon_factory.getIcon(IconFactory.AST_NODE)
-        self.iconPyNode = self.icon_factory.getIcon(IconFactory.PY_NODE)
-        self.iconListNode = self.icon_factory.getIcon(IconFactory.LIST_NODE)
-
-        # self.iconAstNode = QtGui.QIcon(os.path.join(icons_directory(), "astnode.svg"), )
-        # self.iconPyNode = QtGui.QIcon(os.path.join(icons_directory(), "pynode.svg"))
-        # self.iconListNode = QtGui.QIcon(os.path.join(icons_directory(), "list-l.svg"))
-        # self.iconAstNode = QtGui.QIcon(os.path.join(icons_directory(), "star-empty.svg"))
-        # self.iconPyNode = QtGui.QIcon(os.path.join(icons_directory(), "pynode.svg"))
-        # self.iconListNode = QtGui.QIcon(os.path.join(icons_directory(), "list-l.svg"))
 
         self.row_size_hint = QtCore.QSize()
         self.row_size_hint.setHeight(20)
@@ -114,7 +103,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
 
     @QtCore.Slot()
     def expand_reset(self, tree_item=None):
-        """ Expands all classes and body lists so that functions and methods show
+        """ Expands/collapses all nodes as they were at program start up.
         """
         if tree_item is None:
             tree_item = self.invisibleRootItem()
@@ -132,14 +121,14 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
 
     @QtCore.Slot(int, int)
     def select_node(self, line_nr, column_nr):
-        """ Select the node give a line and column number
+        """ Selects the node given a line and column number.
         """
         found_item = self.find_item(self.invisibleRootItem(), (line_nr, column_nr))
         self.setCurrentItem(found_item) # Unselects if found_item is None
 
 
     def get_item_span(self, tree_item):
-        """ Returns (start_pos, end_pos) tuple where start_pos and end_pos in turn are (line, col)
+        """ Returns (start_pos, end_pos) tuple where start_pos and end_pos, in turn, are (line, col)
             tuples
         """
         start_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS)
@@ -147,9 +136,8 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         return (start_pos, end_pos)
 
 
-
     def find_item(self, tree_item, position):
-        """ Finds the deepest node item that highlights the position at line_nr column_nr and
+        """ Finds the deepest node item that highlights the position at line_nr column_nr, and
             has a position defined itself.
 
             :param tree_item: look within this QTreeWidgetItem and its child items
@@ -203,7 +191,8 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             if isinstance(ast_node, ast.AST):
                 value_str = ''
                 node_str = "{} = {}".format(field_label, class_name(ast_node))
-                node_item.setIcon(SyntaxTreeWidget.COL_NODE, self.iconAstNode)
+                node_item.setIcon(SyntaxTreeWidget.COL_NODE,
+                                  self.icon_factory.getIcon(IconFactory.AST_NODE))
 
                 if hasattr(ast_node, 'lineno'):
                     node_item.setData(SyntaxTreeWidget.COL_POS, ROLE_POS,
@@ -215,14 +204,16 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             elif isinstance(ast_node, (list, tuple)):
                 value_str = ''
                 node_str = "{} = {}".format(field_label, class_name(ast_node))
-                node_item.setIcon(SyntaxTreeWidget.COL_NODE, self.iconListNode)
+                node_item.setIcon(SyntaxTreeWidget.COL_NODE,
+                                  self.icon_factory.getIcon(IconFactory.PY_NODE))
 
                 for idx, elem in enumerate(ast_node):
                     add_node(elem, node_item, "{}[{:d}]".format(field_label, idx))
             else:
                 value_str = repr(ast_node)
                 node_str = "{} = {}".format(field_label, value_str)
-                node_item.setIcon(SyntaxTreeWidget.COL_NODE, self.iconPyNode)
+                node_item.setIcon(SyntaxTreeWidget.COL_NODE,
+                                  self.icon_factory.getIcon(IconFactory.LIST_NODE))
 
             node_item.setText(SyntaxTreeWidget.COL_NODE, node_str)
             node_item.setText(SyntaxTreeWidget.COL_FIELD, field_label)
@@ -234,9 +225,8 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             node_item.setToolTip(SyntaxTreeWidget.COL_CLASS, class_name(ast_node))
             node_item.setToolTip(SyntaxTreeWidget.COL_VALUE, value_str)
 
-            # To force icon size in Python 2
+            # To force icon size in Python 2 (not
             node_item.setSizeHint(SyntaxTreeWidget.COL_NODE, self.row_size_hint)
-
 
             return node_item
 
@@ -281,16 +271,17 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, last_pos)
             tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, max_last_pos)
         elif cmp > 0:
-            # This seems to occur when a function has decorators, which are located in the tree
-            # after the body but have a line number that is smaller. Don't know how what to do.
+            # The node positions (line-nr, col) are not always in increasing order when traversing
+            # the tree. This may result in highlight spans where the start pos is larger than the
+            # end pos.
             logger.warn("Nodes out of order. Invalid highlighting {}:{} : {}:{} ({})"
                         .format(last_pos[0], last_pos[1], max_last_pos[0], max_last_pos[1],
                                 tree_item.text(SyntaxTreeWidget.COL_NODE)))
             tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, last_pos)
             tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, max_last_pos)
-            tree_item.setForeground(SyntaxTreeWidget.COL_HIGHLIGHT,
-                                    QtGui.QBrush(QtGui.QColor('red')))
-
+            if DEBUGGING:
+                tree_item.setForeground(SyntaxTreeWidget.COL_HIGHLIGHT,
+                                        QtGui.QBrush(QtGui.QColor('red')))
         else:
             pass # No new position found in the children. These nodes will be filled in later.
 

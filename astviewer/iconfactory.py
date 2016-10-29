@@ -57,43 +57,33 @@ class IconFactory(object):
         return cls._singleInstance
 
 
-    def registerIcon(self, fileName, glyph, isOpen=None):
-        """ Register an icon SVG file given a glyph, and optionally the open/close state.
+    def registerIcon(self, fileName, glyph):
+        """ Register an icon SVG file given a glyph.
 
             :param fileName: filename to the SVG file.
                 If the filename is a relative path, the ICONS_DIRECTORY will be prepended.
             :param glyph: a string describing the glyph (e.g. 'file', 'array')
-            :param isOpen: boolean that indicates if the RTI is open or closed.
-                If None, the icond will be registered for open is both True and False
             :return: QIcon
         """
-        check_class(isOpen, bool, allow_none=True)
-
         if fileName and not os.path.isabs(fileName):
             fileName = os.path.join(self.ICONS_DIRECTORY, fileName)
 
-        if isOpen is None:
-            # Register both opened and closed variants
-            self._registry[(glyph, True)] = fileName
-            self._registry[(glyph, False)] = fileName
-        else:
-            self._registry[(glyph, isOpen)] = fileName
+        self._registry[glyph] = fileName
 
 
-    def getIcon(self, glyph, isOpen=True, color=None):
-        """ Returns a QIcon given a glyph name, open/closed state and color.
+    def getIcon(self, glyph, color=None):
+        """ Returns a QIcon given a glyph name and color.
 
             The resulting icon is cached so that it only needs to be rendered once.
 
             :param glyph: name of a registered glyph (e.g. 'file', 'array')
-            :param isOpen: boolean that indicates if the RTI is open or closed.
             :param color: '#RRGGBB' string (e.g. '#FF0000' for red)
             :return: QtGui.QIcon
         """
         try:
-            fileName = self._registry[(glyph, isOpen)]
+            fileName = self._registry[glyph]
         except KeyError:
-            logger.warn("Unregistered icon glyph: {} (open={})".format(glyph, isOpen))
+            logger.warn("Unregistered icon glyph: {}".format(glyph))
             log_dictionary(self._registry, "registry", logger=logger)
             raise
 

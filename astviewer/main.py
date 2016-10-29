@@ -1,5 +1,5 @@
 """
-   Program that shows the program on the right and its abstract syntax tree (ast) on the left.
+   Program that shows source code on the right and its abstract syntax tree (ast) on the left.
 """
 from __future__ import print_function
                 
@@ -153,12 +153,13 @@ class AstViewer(QtWidgets.QMainWindow):
         """ Cleanup resources.
         """
         logger.debug("Cleaning up resources.")
-        self.editor.sigTextClicked.disconnect(self.ast_tree.select_node)
+
         self.ast_tree.currentItemChanged.disconnect(self.highlight_node)
 
 
     def close_file(self):
-        """ Clears the widgets """
+        """ Clears the widgets
+        """
         self._file_name = ""
         self._source_code = ""
         self.editor.clear()
@@ -185,8 +186,9 @@ class AstViewer(QtWidgets.QMainWindow):
     def _get_file_name_from_dialog(self):
         """ Opens a file dialog and returns the file name selected by the user
         """
-        # file_name, _ = getopenfilename(self, "Open File", '', "Python Files (*.py);;All Files (*)")
-        logger.debug("_get_file_name_from_dialog, directory: {}".format(self.file_dialog.directory().path()))
+        logger.debug("_get_file_name_from_dialog, directory: {}"
+                     .format(self.file_dialog.directory().path()))
+
         self.file_dialog.exec_()
         files = self.file_dialog.selectedFiles()
 
@@ -229,7 +231,7 @@ class AstViewer(QtWidgets.QMainWindow):
 
                 
     def _load_file(self, file_name):
-        """ Opens a file and sets self._file_name and self._source code if succesful
+        """ Opens a file and sets self._file_name and self._source code if successful
         """
         logger.debug("Opening {!r}".format(file_name))
         
@@ -268,7 +270,7 @@ class AstViewer(QtWidgets.QMainWindow):
 
 
     def _readViewSettings(self, reset=False):
-        """ Reads the persistent program settings
+        """ Reads the persistent program settings.
 
             :param reset: If True, the program resets to its default settings
         """
@@ -334,18 +336,20 @@ class AstViewer(QtWidgets.QMainWindow):
 
 
     def my_test(self):
-        """ Function for testing """
+        """ Function for testing.
+        """
         logger.debug("Test function called.")
         logger.info("Last character: {}".format(self.editor.get_last_pos()))
 
 
     def about(self):
-        """ Shows the about message window. """
+        """ Shows the about message window.
+        """
         QtWidgets.QMessageBox.about(self, "About %s" % PROGRAM_NAME, ABOUT_MESSAGE)
 
 
     def closeEvent(self, event):
-        """ Called when the window is closed
+        """ Called when the window is closed.
         """
         logger.debug("closeEvent")
         self._writeViewSettings()
@@ -356,7 +360,8 @@ class AstViewer(QtWidgets.QMainWindow):
 
 
     def quit_application(self):
-        """ Closes all windows """
+        """ Closes all windows.
+        """
         app = QtWidgets.QApplication.instance()
         app.closeAllWindows()
 
