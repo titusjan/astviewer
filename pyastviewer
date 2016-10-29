@@ -17,7 +17,6 @@ from astviewer.misc import logging_basic_config, handleException
 from astviewer.misc import PROGRAM_NAME, PROGRAM_VERSION, PYTHON_VERSION, QT_API_NAME, QT_API
 from astviewer.main import view
 
-
 logger = logging.getLogger(__name__)
 
 sys.excepthook = handleException
@@ -26,14 +25,6 @@ sys.excepthook = handleException
 def main():
     """ Main program to test stand alone 
     """
-    try:
-        QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
-    except Exception as ex:
-        pass # Not availabe in PyQt4
-
-    app = QtWidgets.QApplication(sys.argv) # to allow for Qt command line arguments
-    remaining_argv = app.arguments()
-    
     parser = argparse.ArgumentParser(description='Python abstract syntax tree viewer')
     parser.add_argument(dest='file_name', help='Python input file', nargs='?')
     parser.add_argument('-m', '--mode', dest='mode', default = 'exec',
@@ -51,14 +42,26 @@ def main():
     parser.add_argument('--reset', dest='reset', action="store_true",
         help = """If given, the persistent settings, such as window position and size,
                   will be reset to their default values.""")
+    parser.add_argument('-v', '--version', action = 'store_true',
+        help="Prints the program version.")
 
-    
-    args = parser.parse_args(args = remaining_argv[1:])
+    args = parser.parse_args()
 
     logging_basic_config(args.log_level.upper())
 
+    if args.version:
+        print('{} {}'.format(PROGRAM_NAME, PROGRAM_VERSION))
+        sys.exit(0)
+
     logger.info('Started {} {}'.format(PROGRAM_NAME, PROGRAM_VERSION))
     logger.info('Using Python {} and {} (api={})'.format(PYTHON_VERSION, QT_API_NAME, QT_API))
+
+    try:
+        QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
+    except Exception as ex:
+        logger.debug("AA_UseHighDpiPixmaps not available in PyQt4: {}".format(ex))
+
+    _app = QtWidgets.QApplication([])
 
     exit_code = view(file_name = args.file_name, mode = args.mode, reset = args.reset)
     logging.info('Done {}'.format(PROGRAM_NAME))
