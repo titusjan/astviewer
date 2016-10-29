@@ -7,12 +7,15 @@ Python Abstract Syntax Tree viewer/browser in Qt.
 
 #### Installation:
 
-1.	Install PySide:
-	http://qt-project.org/wiki/Category:LanguageBindings::PySide
-	
+
+1.	Install
+	    [PySide](http://wiki.qt.io/Category:LanguageBindings::PySide::Downloads)
+    or
+	    [PyQt4](https://www.riverbankcomputing.com/software/pyqt/download).
+
 2.	Run the installer:
 
-		%> sudo python setup.py install
+		%> python setup.py install
 	
 #### Usage:
 	
