@@ -32,9 +32,9 @@ def cmpIdx(idx0, idx1):
         :param idx2: positive int, -1 or None
         :return: int
     """
-    assert idx0 == None or idx0 == -1 or idx0 >=0, \
+    assert idx0 is None or idx0 == -1 or idx0 >=0, \
         "Idx0 should be None, -1 or >= 0. Got: {!r}".format(idx0)
-    assert idx1 == None or idx1 == -1 or idx1 >=0, \
+    assert idx1 is None or idx1 == -1 or idx1 >=0, \
         "Idx1 should be None, -1 or >= 0. Got: {!r}".format(idx1)
 
     # Handle -1 the same way as None
@@ -172,12 +172,6 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         """
         self.clear()
 
-        # State we keep during the recursion.
-        # Is needed to populate the selection column.
-        to_be_updated = list([])
-        from_pos = [None, None] # line, col
-        to_pos   = [1, 0]
-
         def add_node(ast_node, parent_item, field_label):
             """ Helper function that recursively adds nodes.
 
@@ -274,9 +268,9 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             # The node positions (line-nr, col) are not always in increasing order when traversing
             # the tree. This may result in highlight spans where the start pos is larger than the
             # end pos.
-            logger.warn("Nodes out of order. Invalid highlighting {}:{} : {}:{} ({})"
-                        .format(last_pos[0], last_pos[1], max_last_pos[0], max_last_pos[1],
-                                tree_item.text(SyntaxTreeWidget.COL_NODE)))
+            logger.warning("Nodes out of order. Invalid highlighting {}:{} : {}:{} ({})"
+                           .format(last_pos[0], last_pos[1], max_last_pos[0], max_last_pos[1],
+                                   tree_item.text(SyntaxTreeWidget.COL_NODE)))
             tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, last_pos)
             tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, max_last_pos)
             if DEBUGGING:
@@ -296,7 +290,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         end_pos = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS)
 
         # If the highlight span is still undefined use the value from the parent.
-        if (start_pos is None and end_pos is None):
+        if start_pos is None and end_pos is None:
             start_pos = parent_start_pos
             end_pos = parent_end_pos
             tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, start_pos)

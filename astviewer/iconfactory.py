@@ -5,8 +5,8 @@
 from __future__ import print_function
 import logging, os
 
-from astviewer.qtpy import QtCore, QtGui, QtWidgets, QtSvg
-from astviewer.misc import program_directory, DEBUGGING, check_class, log_dictionary
+from astviewer.qtpy import QtCore, QtGui, QtSvg
+from astviewer.misc import program_directory, DEBUGGING, log_dictionary
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,7 @@ class IconFactory(object):
         try:
             fileName = self._registry[glyph]
         except KeyError:
-            logger.warn("Unregistered icon glyph: {}".format(glyph))
+            logger.warning("Unregistered icon glyph: {}".format(glyph))
             log_dictionary(self._registry, "registry", logger=logger)
             raise
 
@@ -106,14 +106,14 @@ class IconFactory(object):
         key = (fileName, color)
         if key not in self._icons:
             try:
-                with open(fileName, 'r') as input:
-                    svg = input.read()
+                with open(fileName, 'r') as inputFile:
+                    svg = inputFile.read()
 
                 self._icons[key] = self.createIconFromSvg(svg, color=color)
             except Exception as ex:
                 # It's preferable to show no icon in case of an error rather than letting
                 # the application fail. Icons are a (very) nice to have.
-                logger.warn("Unable to read icon: {}".format(ex))
+                logger.warning("Unable to read icon: {}".format(ex))
                 if DEBUGGING:
                     raise
                 else:
@@ -145,7 +145,7 @@ class IconFactory(object):
         qByteArray = QtCore.QByteArray()
         qByteArray.append(svg)
         svgRenderer = QtSvg.QSvgRenderer(qByteArray)
-        icon = QtGui.QIcon() # TODO: set Qt::AA_UseHighDpiPixmaps in Qt5?
+        icon = QtGui.QIcon()
         for size in self.renderSizes:
             pixMap = QtGui.QPixmap(QtCore.QSize(size, size))
             pixMap.fill(QtCore.Qt.transparent)

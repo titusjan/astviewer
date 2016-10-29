@@ -43,6 +43,7 @@ def logging_basic_config(level):
     fmt = '%(filename)25s:%(lineno)-4d : %(levelname)-7s: %(message)s'
     logging.basicConfig(level=level, format=fmt)
 
+# pylint: disable=redefined-outer-name
 
 def log_dictionary(dictionary, msg='', logger=None, level='debug', item_prefix='  '):
     """ Writes a log message with key and value for each item in the dictionary.
@@ -76,6 +77,8 @@ def log_dictionary(dictionary, msg='', logger=None, level='debug', item_prefix='
     for key, value in sorted(dictionary.items()):
         logger.log(level_nr, "{0}{1:<{2}s} = {3}".format(item_prefix, key, max_key_len, value))
 
+
+# pylint: enable=redefined-outer-name
 
 #################
 # Type checking #

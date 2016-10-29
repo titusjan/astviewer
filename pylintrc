@@ -77,7 +77,7 @@ disable=input-builtin,apply-builtin,unichr-builtin,cmp-builtin,file-builtin,relo
     long-suffix,dict-view-method,backtick,next-method-called,long-builtin,dict-iter-method,
     range-builtin-not-iterating,old-raise-syntax,indexing-exception,import-star-module-level,
     metaclass-assignment,cmp-method,setslice-method,
-    # Added by the astviewer project below
+    # Added by the AstViewer project below
     locally-disabled,
     locally-enabled,
     bad-continuation,
@@ -86,8 +86,11 @@ disable=input-builtin,apply-builtin,unichr-builtin,cmp-builtin,file-builtin,relo
     multiple-imports,
     logging-format-interpolation,
     too-few-public-methods,
+    too-many-public-methods,
     no-self-use,
-    bad-whitespace
+    bad-whitespace,
+    bare-except,
+    broad-except
 
 
 [REPORTS]
@@ -140,10 +143,10 @@ ignore-imports=yes
 [BASIC]
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=i,id,e,ex,f,Run,_,logger
+good-names=i,id,e,ex,f,Run,_,logger,ui,l,s
 
 # Bad variable names which should always be refused, separated by a comma
-bad-names=foo,bar,baz,toto,tutu,tata
+bad-names=foo,bar,baz,toto,tutu,tata,aap,noot,mies
 
 # Colon-delimited sets of names that determine each other's naming style when
 # the name regexes allow several styles.
@@ -320,7 +323,8 @@ ignore-mixin-members=yes
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis. It
 # supports qualified module names, as well as Unix pattern matching.
-ignored-modules=PySide.QtCore, PySide.QtGui, sip, numpy, numpy.*
+ignored-modules=sip, zmq,
+    astviewer.qtpy.QtCore, astviewer.qtpy.QtGui, astviewer.qtpy.QtWidgets,  astviewer.qtpy.QtSvg
 
 # List of class names for which member attributes should not be checked (useful
 # for classes with dynamically set attributes). This supports the use of

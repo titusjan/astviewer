@@ -76,7 +76,7 @@ class AstViewer(QtWidgets.QMainWindow):
         self._mode = mode
 
         # Views
-        self._setup_views(reset=reset)
+        self._setup_views()
         self._setup_menu()
         self.setWindowTitle('{}'.format(PROGRAM_NAME))
         
@@ -122,7 +122,7 @@ class AstViewer(QtWidgets.QMainWindow):
         help_menu.addAction('&About', self.about)
 
 
-    def _setup_views(self, reset=False):
+    def _setup_views(self):
         """ Creates the UI widgets. 
         """
         self.file_dialog = QtWidgets.QFileDialog(parent=self, caption="Open File")
