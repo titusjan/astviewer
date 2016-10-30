@@ -20,7 +20,7 @@ Then install AstViewer with:
 
 	%> pip install astviewer
 
-or use the intaller:
+or use the installer:
 
     %> python setup.py install
 
