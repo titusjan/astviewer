@@ -18,7 +18,7 @@ it prefers PyQt over PySide. You can force AstViewer to use a certain binding by
 
 Then install AstViewer with:
 
-	%> pip install astviewer
+    %> pip install astviewer
 
 or use the installer:
 
@@ -29,7 +29,7 @@ or use the installer:
 	
 *	Command line example:
 	
-	%> pyastviewer myprog.py
+    %> pyastviewer myprog.py
 	
 *	Examples to use from within Python:
 
