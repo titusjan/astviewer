@@ -1,7 +1,7 @@
 astviewer
 =========
 
-Python Abstract Syntax Tree viewer/browser in Qt.
+Graphical User Interface for viewing Python Abstract Syntax Trees.
 
 ![astviewer screen shot](screen_shot.png)
 
