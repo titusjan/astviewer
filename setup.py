@@ -34,10 +34,7 @@ setup(name = 'astviewer',
         'Topic :: Utilities'],
     packages = ['astviewer', 'astviewer.qtpy', 'astviewer.qtpy._patch'],
     package_data = {'astviewer': ['icons/*']}, # don't use data_files, it installs relative to the intallation dir (e.g. /usr/local)
-
-    # data_files=[('astviewer/icons',
-    #              ['astviewer/icons/astnode.svg', 'astviewer/icons/list-l.svg', 'astviewer/icons/pynode.svg'])],
     scripts = ['pyastviewer'],
-    requires = ['PySide']
+    #requires = ['python-qt5']
 )
 

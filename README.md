@@ -7,29 +7,37 @@ Python Abstract Syntax Tree viewer/browser in Qt.
 
 #### Installation:
 
-
-1.	Install
-	    [PySide](http://wiki.qt.io/Category:LanguageBindings::PySide::Downloads)
+First install
+	    [PyQt](https://www.riverbankcomputing.com/software/pyqt/download5)
     or
-	    [PyQt4](https://www.riverbankcomputing.com/software/pyqt/download).
+	    [PySide](http://wiki.qt.io/Category:LanguageBindings::PySide::Downloads)
 
-2.	Run the installer:
+AstViewer automatically detects which Qt bindings are installed. If both bindings are installed
+it prefers PyQt over PySide. You can force AstViewer to use a certain binding by setting the
+`QT_API` environment variable to `pyqt5`, `pyqt4`, or `pyside`.
 
-		%> python setup.py install
-	
+Then install AstViewer with:
+
+	%> pip install astviewer
+
+or use the intaller:
+
+    %> python setup.py install
+
+
 #### Usage:
 	
 *	Command line example:
 	
-		%> pyastviewer myprog.py
+	%> pyastviewer myprog.py
 	
 *	Examples to use from within Python:
 
-	```python
+```python
 	>>> from astviewer.main import view
 	>>> view(file_name='myprog.py')
 	>>> view(source_code = 'a + 3', mode='eval')
-	```
+```
 
 #### Further links:
 
