@@ -1,15 +1,43 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
+# To make a release follow these steps:
+#   python setup.py sdist --formats=zip
+
+
 from distutils.core import setup
 
-from astviewer.misc import DEBUGGING
+from astviewer.misc import DEBUGGING, PROGRAM_VERSION
 
-assert DEBUGGING == False, "DEBUGGING must be False"
+assert not DEBUGGING, "DEBUGGING must be False"
 
 setup(name = 'astviewer',
-    version = '1.1.0-dev',
+    version = PROGRAM_VERSION,
     author = "Pepijn Kenter", 
-    author_email = "titusjan@gmail.com", 
-    py_modules = ['astviewer'], 
+    author_email = "titusjan@gmail.com",
+    description = 'GUI for viewing a Python Abstract Syntax Tree.',
+    long_description = open('README.txt').read(),
+    url = 'https://github.com/titusjan/astviewer',
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Environment :: X11 Applications :: Qt',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Natural Language :: English',
+        'Operating System :: MacOS :: MacOS X',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python',
+        'Topic :: Adaptive Technologies',
+        'Topic :: Software Development',
+        'Topic :: Utilities'],
+    packages = ['astviewer', 'astviewer.qtpy', 'astviewer.qtpy._patch'],
+    package_data = {'astviewer': ['icons/*']}, # don't use data_files, it installs relative to the intallation dir (e.g. /usr/local)
+
+    # data_files=[('astviewer/icons',
+    #              ['astviewer/icons/astnode.svg', 'astviewer/icons/list-l.svg', 'astviewer/icons/pynode.svg'])],
     scripts = ['pyastviewer'],
-    requires = ['PySide (>=1.1.2)']
+    requires = ['PySide']
 )
 

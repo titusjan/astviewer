@@ -199,7 +199,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
                 value_str = ''
                 node_str = "{} = {}".format(field_label, class_name(ast_node))
                 node_item.setIcon(SyntaxTreeWidget.COL_NODE,
-                                  self.icon_factory.getIcon(IconFactory.PY_NODE))
+                                  self.icon_factory.getIcon(IconFactory.LIST_NODE))
 
                 for idx, elem in enumerate(ast_node):
                     add_node(elem, node_item, "{}[{:d}]".format(field_label, idx))
@@ -207,7 +207,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
                 value_str = repr(ast_node)
                 node_str = "{} = {}".format(field_label, value_str)
                 node_item.setIcon(SyntaxTreeWidget.COL_NODE,
-                                  self.icon_factory.getIcon(IconFactory.LIST_NODE))
+                                  self.icon_factory.getIcon(IconFactory.PY_NODE))
 
             node_item.setText(SyntaxTreeWidget.COL_NODE, node_str)
             node_item.setText(SyntaxTreeWidget.COL_FIELD, field_label)
@@ -268,9 +268,9 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             # The node positions (line-nr, col) are not always in increasing order when traversing
             # the tree. This may result in highlight spans where the start pos is larger than the
             # end pos.
-            logger.warning("Nodes out of order. Invalid highlighting {}:{} : {}:{} ({})"
-                           .format(last_pos[0], last_pos[1], max_last_pos[0], max_last_pos[1],
-                                   tree_item.text(SyntaxTreeWidget.COL_NODE)))
+            logger.info("Nodes out of order. Invalid highlighting {}:{} : {}:{} ({})"
+                        .format(last_pos[0], last_pos[1], max_last_pos[0], max_last_pos[1],
+                                tree_item.text(SyntaxTreeWidget.COL_NODE)))
             tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS, last_pos)
             tree_item.setData(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS, max_last_pos)
             if DEBUGGING:

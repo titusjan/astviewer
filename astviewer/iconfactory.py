@@ -140,7 +140,6 @@ class IconFactory(object):
             for oldColor in colorsToBeReplaced:
                 svg = svg.replace(oldColor, color)
 
-        logger.debug("svg type: {}".format(type(svg)))
         # From http://stackoverflow.com/questions/15123544/change-the-color-of-an-svg-in-qt
         qByteArray = QtCore.QByteArray()
         qByteArray.append(svg)

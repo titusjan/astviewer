@@ -10,7 +10,8 @@
 
 *   Clicking the text will select the corresponding node in the tree.
 
-*   Highlighting works recursively.
+*   Highlighting works recursively. Still not perfect, see Issue 1:
+        https://github.com/titusjan/astviewer/issues/1
 
 
 2013-08-10, Version 1.0.0

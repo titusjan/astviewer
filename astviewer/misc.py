@@ -9,9 +9,9 @@ from astviewer.qtpy import QtCore, QtWidgets
 
 logger=logging.getLogger(__name__)
 
-DEBUGGING = True
+DEBUGGING = False
 
-PROGRAM_NAME = 'astview'
+PROGRAM_NAME = 'astviewer'
 PROGRAM_VERSION = '1.1.0-dev'
 PYTHON_VERSION = "%d.%d.%d" % (sys.version_info[0:3])
 QT_API = astviewer.qtpy.API
