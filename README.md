@@ -27,11 +27,11 @@ or use the installer:
 
 #### Usage:
 	
-*	Command line example:
+Command line example:
 	
     %> pyastviewer myprog.py
 	
-*	Examples to use from within Python:
+Examples to use from within Python:
 
 ```python
 	>>> from astviewer.main import view
