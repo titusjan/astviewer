@@ -8,7 +8,7 @@
 
 from distutils.core import setup
 
-from astviewer.misc import DEBUGGING, PROGRAM_VERSION
+from astviewer.version import DEBUGGING, PROGRAM_VERSION
 
 assert not DEBUGGING, "DEBUGGING must be False"
 

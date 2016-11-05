@@ -6,7 +6,8 @@ from __future__ import print_function
 import logging, os
 
 from astviewer.qtpy import QtCore, QtGui, QtSvg
-from astviewer.misc import program_directory, DEBUGGING, log_dictionary
+from astviewer.misc import program_directory, log_dictionary
+from astviewer.version import DEBUGGING
 
 logger = logging.getLogger(__name__)
 

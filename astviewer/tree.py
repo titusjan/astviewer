@@ -6,9 +6,10 @@ import ast, logging
 import os.path
 
 from astviewer.iconfactory import IconFactory
-from astviewer.misc import class_name, check_class, DEBUGGING
+from astviewer.misc import class_name, check_class
 from astviewer.qtpy import QtCore, QtGui, QtWidgets
 from astviewer.toggle_column_mixin import ToggleColumnTreeWidget
+from astviewer.version import DEBUGGING
 
 logger = logging.getLogger(__name__)
 

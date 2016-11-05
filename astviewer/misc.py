@@ -5,15 +5,11 @@ import os.path
 import astviewer.qtpy
 import astviewer.qtpy._version as qtpy_version
 
+from astviewer.version import DEBUGGING, PROGRAM_NAME, PROGRAM_VERSION, PYTHON_VERSION
 from astviewer.qtpy import QtCore, QtWidgets
 
 logger=logging.getLogger(__name__)
 
-DEBUGGING = False
-
-PROGRAM_NAME = 'astviewer'
-PROGRAM_VERSION = '1.1.0'
-PYTHON_VERSION = "%d.%d.%d" % (sys.version_info[0:3])
 QT_API = astviewer.qtpy.API
 QT_API_NAME = astviewer.qtpy.API_NAME
 QTPY_VERSION = '.'.join(map(str, qtpy_version.version_info))
