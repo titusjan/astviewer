@@ -5,6 +5,8 @@
 # To make a release follow these steps:
 #   python setup.py sdist --formats=zip
 
+# Then upload to PiPy with
+#   twine upload dist/astviewer-1.1.1.zip
 
 from distutils.core import setup
 
@@ -35,6 +37,6 @@ setup(name = 'astviewer',
     packages = ['astviewer', 'astviewer.qtpy', 'astviewer.qtpy._patch'],
     package_data = {'astviewer': ['icons/*']}, # don't use data_files, it installs relative to the intallation dir (e.g. /usr/local)
     scripts = ['pyastviewer'],
-    #requires = ['python-qt5']
+    #requires = ['pyqt']
 )
 

@@ -102,6 +102,15 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         self.setIconSize(QtCore.QSize(20, 20))
 
 
+    def sizeHint(self):
+        """ The recommended size for the widget.
+        """
+        size = QtCore.QSize()
+        size.setWidth(600)
+        size.setHeight(700)
+        return size
+
+
     @QtCore.Slot()
     def expand_reset(self, tree_item=None):
         """ Expands/collapses all nodes as they were at program start up.

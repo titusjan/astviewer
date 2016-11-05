@@ -90,7 +90,7 @@ class AstViewer(QtWidgets.QMainWindow):
         self._update_widgets()
 
         # Read persistent settings
-        self._readViewSettings(reset = reset)
+        self._readViewSettings(reset)
 
 
     def _setup_menu(self):
@@ -106,6 +106,8 @@ class AstViewer(QtWidgets.QMainWindow):
             file_menu.addAction("&Test", self.my_test, "Ctrl+T")
         
         self.view_menu = self.menuBar().addMenu("&View")
+        self.view_menu.addAction(self.editorDock.toggleViewAction())
+
         self.header_menu = self.view_menu.addMenu("&Tree Columns")
 
         # Add toggling of tree columns to the View menu
@@ -129,20 +131,14 @@ class AstViewer(QtWidgets.QMainWindow):
         self.file_dialog.setFileMode(QtWidgets.QFileDialog.ExistingFile)
         self.file_dialog.setNameFilter("Python Files (*.py);;All Files (*)")
 
-        self.central_splitter = QtWidgets.QSplitter(self, orientation = QtCore.Qt.Horizontal)
-        self.setCentralWidget(self.central_splitter)
-
         self.ast_tree = SyntaxTreeWidget()
-        self.central_splitter.addWidget(self.ast_tree)
+        self.setCentralWidget(self.ast_tree)
 
         self.editor = SourceEditor()
-        self.central_splitter.addWidget(self.editor)
-        
-        self.central_splitter.setCollapsible(0, False)
-        self.central_splitter.setCollapsible(1, False)
-        self.central_splitter.setSizes([600, 500])
-        self.central_splitter.setStretchFactor(0, 0.5)
-        self.central_splitter.setStretchFactor(1, 0.5)
+        self.editorDock = QtWidgets.QDockWidget("Source code", self)
+        self.editorDock.setObjectName("editor_dock") # needed for saveState
+        self.editorDock.setWidget(self.editor)
+        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.editorDock)
 
         # Connect signals
         self.ast_tree.currentItemChanged.connect(self.highlight_node)
@@ -269,14 +265,11 @@ class AstViewer(QtWidgets.QMainWindow):
             self.editor.select_text(from_pos, to_pos)
 
 
-    def _readViewSettings(self, reset=False):
+    def _readViewSettings(self, reset):
         """ Reads the persistent program settings.
 
             :param reset: If True, the program resets to its default settings
         """
-        pos = QtCore.QPoint(30, 30)
-        window_size = QtCore.QSize(1300, 700)  # Assumes minimal resolution of 1366 x 768
-
         header = self.ast_tree.header()
         header_restored = False
 
@@ -286,6 +279,7 @@ class AstViewer(QtWidgets.QMainWindow):
             logger.debug("Reading view settings")
             settings = get_qsettings()
             settings.beginGroup('view')
+
             dialog_state = settings.value("file_dialog/state")
             if dialog_state:
                 dialog_restored = self.file_dialog.restoreState(dialog_state)
@@ -295,11 +289,20 @@ class AstViewer(QtWidgets.QMainWindow):
             # restoreState doesn't seem to restore the directory so do it ourselves.
             self.file_dialog.setDirectory(settings.value("file_dialog/dir"))
 
-            pos = settings.value("main_window/pos", pos)
-            window_size = settings.value("main_window/size", window_size)
-            splitter_state = settings.value("central_splitter/state")
-            if splitter_state:
-                self.central_splitter.restoreState(splitter_state)
+            win_geom = settings.value("geometry")
+            if win_geom:
+                self.restoreGeometry(win_geom)
+            else:
+                # Can happen in new version
+                logger.warning("Unable to restore main window geometry.")
+
+            win_state = settings.value("state")
+            if win_state:
+                self.restoreState(win_state)
+            else:
+                # Can happen in new version
+                logger.warning("Unable to restore main window state.")
+
             header_restored = self.ast_tree.read_view_settings('tree/header_state', settings, reset)
             settings.endGroup()
 
@@ -315,8 +318,6 @@ class AstViewer(QtWidgets.QMainWindow):
                 visible = False if idx == SyntaxTreeWidget.COL_HIGHLIGHT else True
                 self.ast_tree.toggle_column_actions_group.actions()[idx].setChecked(visible)
 
-        self.resize(window_size)
-        self.move(pos)
 
 
     def _writeViewSettings(self):
@@ -329,9 +330,9 @@ class AstViewer(QtWidgets.QMainWindow):
         self.ast_tree.write_view_settings("tree/header_state", settings)
         settings.setValue("file_dialog/state", self.file_dialog.saveState())
         settings.setValue("file_dialog/dir", self.file_dialog.directory().path())
-        settings.setValue("central_splitter/state", self.central_splitter.saveState())
-        settings.setValue("main_window/pos", self.pos())
-        settings.setValue("main_window/size", self.size())
+
+        settings.setValue("geometry", self.saveGeometry())
+        settings.setValue("state", self.saveState())
         settings.endGroup()
 
 
@@ -339,7 +340,8 @@ class AstViewer(QtWidgets.QMainWindow):
         """ Function for testing.
         """
         logger.debug("Test function called.")
-        logger.info("Last character: {}".format(self.editor.get_last_pos()))
+        #logger.info("Last character: {}".format(self.editor.get_last_pos()))
+
 
 
     def about(self):

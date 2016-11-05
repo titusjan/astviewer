@@ -1,7 +1,8 @@
 2016-11-05, Version 1.1.1
 
-*   Fixed installer
+*   Source code is shown in a dock-widget.
 
+*   Fixed setup.py to work when PyQt is not intalled.
 
 
 2016-10-29, Version 1.1.0

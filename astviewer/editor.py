@@ -36,13 +36,23 @@ class SourceEditor(QtWidgets.QPlainTextEdit):
         self.setStyleSheet("selection-color: black; selection-background-color: #FFE000;")
 
 
+    def sizeHint(self):
+        """ The recommended size for the widget.
+        """
+        size = QtCore.QSize()
+        size.setWidth(700)
+        size.setHeight(700)
+        return size
+
+
     def mousePressEvent(self, mouseEvent):
         """ On mouse press, the sigTextClicked(line_nr, column_nr) is emitted.
         """
-        cursor = self.cursorForPosition(mouseEvent.pos())
-        # Since the word wrap is off, there is one block per line. Block numbers are zero-based
-        # but code lines start at 1.
-        self.sigTextClicked.emit(cursor.blockNumber() + 1, cursor.positionInBlock())
+        if mouseEvent.button() == QtCore.Qt.LeftButton:
+            cursor = self.cursorForPosition(mouseEvent.pos())
+            # Since the word wrap is off, there is one block per line. Block numbers are zero-based
+            # but code lines start at 1.
+            self.sigTextClicked.emit(cursor.blockNumber() + 1, cursor.positionInBlock())
 
 
     def select_text(self, from_pos, to_line_pos):
