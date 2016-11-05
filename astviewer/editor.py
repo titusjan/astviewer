@@ -2,7 +2,7 @@
 """
 from __future__ import print_function
 
-import logging
+import logging, sys
 
 from astviewer.qtpy import QtCore, QtGui, QtWidgets
 
@@ -27,7 +27,11 @@ class SourceEditor(QtWidgets.QPlainTextEdit):
         font = QtGui.QFont()
         font.setFamily('Courier')
         font.setFixedPitch(True)
-        font.setPointSize(13)
+
+        # It's hard to make a platform independend font size
+        # http://stackoverflow.com/a/7381441/625350
+        if sys.platform.startswith('linux'):
+            font.setPointSize(12)
         
         self.setReadOnly(True)
         self.setFont(font)

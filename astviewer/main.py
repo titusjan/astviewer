@@ -91,6 +91,7 @@ class AstViewer(QtWidgets.QMainWindow):
 
         # Read persistent settings
         self._readViewSettings(reset)
+        self._settingsSaved = False
 
 
     def _setup_menu(self):
@@ -319,21 +320,27 @@ class AstViewer(QtWidgets.QMainWindow):
                 self.ast_tree.toggle_column_actions_group.actions()[idx].setChecked(visible)
 
 
-
     def _writeViewSettings(self):
         """ Writes the view settings to the persistent store
         """
-        logger.debug("Writing view settings for window")
+        if self._settingsSaved:
+            logger.debug("Settings have been saved before. Returning to caller.")
+            return
 
-        settings = get_qsettings()
-        settings.beginGroup('view')
-        self.ast_tree.write_view_settings("tree/header_state", settings)
-        settings.setValue("file_dialog/state", self.file_dialog.saveState())
-        settings.setValue("file_dialog/dir", self.file_dialog.directory().path())
+        try:
+            logger.debug("Writing view settings for window")
 
-        settings.setValue("geometry", self.saveGeometry())
-        settings.setValue("state", self.saveState())
-        settings.endGroup()
+            settings = get_qsettings()
+            settings.beginGroup('view')
+            self.ast_tree.write_view_settings("tree/header_state", settings)
+            settings.setValue("file_dialog/state", self.file_dialog.saveState())
+            settings.setValue("file_dialog/dir", self.file_dialog.directory().path())
+
+            settings.setValue("geometry", self.saveGeometry())
+            settings.setValue("state", self.saveState())
+            settings.endGroup()
+        finally:
+            self._settingsSaved = True
 
 
     def my_test(self):
@@ -364,6 +371,12 @@ class AstViewer(QtWidgets.QMainWindow):
     def quit_application(self):
         """ Closes all windows.
         """
+        logger.debug("quit_application")
+        # Save the settings before closing any windows. Otherwise it may close the dock window
+        # and then save the state. In _writeViewSettings it is checked if the settings have
+        # already been saved.
+        self._writeViewSettings()
         app = QtWidgets.QApplication.instance()
         app.closeAllWindows()
+        logger.debug("quit_application done")
 

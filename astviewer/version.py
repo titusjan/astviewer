@@ -6,8 +6,8 @@
 
 import sys
 
-DEBUGGING = True
+DEBUGGING = False
 
 PROGRAM_NAME = 'astviewer'
-PROGRAM_VERSION = '1.1.1rc2'
+PROGRAM_VERSION = '1.1.1rc4'
 PYTHON_VERSION = "%d.%d.%d" % (sys.version_info[0:3])
