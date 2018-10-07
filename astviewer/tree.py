@@ -74,8 +74,9 @@ def cmpPos(pos0, pos1):
 class SyntaxTreeWidget(ToggleColumnTreeWidget):
     """ Tree widget that holds the AST.
     """
-    HEADER_LABELS = ["Node", "Field", "Class", "Value", "Line : Col", "Highlight"]
-    (COL_NODE, COL_FIELD, COL_CLASS, COL_VALUE, COL_POS, COL_HIGHLIGHT) = range(len(HEADER_LABELS))
+    HEADER_LABELS = ["Node", "Path", "Field", "Class", "Value", "Line : Col", "Highlight"]
+    (COL_NODE, COL_PATH, COL_FIELD, COL_CLASS, COL_VALUE, COL_POS, COL_HIGHLIGHT) = \
+        range(len(HEADER_LABELS))
 
     def __init__(self, parent=None):
         """ Constructor
@@ -182,11 +183,12 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         """
         self.clear()
 
-        def add_node(ast_node, parent_item, field_label):
+        def add_node(ast_node, parent_item, field_label, path):
             """ Helper function that recursively adds nodes.
 
                 :param parent_item: The parent QTreeWidgetItem to which this node will be added
                 :param field_label: Labels how this node is known to the parent
+                :param parent_path: the path through the field_labels so far.
                 :return: the QTreeWidgetItem that corresonds to the root item of the AST
             """
             node_item = QtWidgets.QTreeWidgetItem(parent_item)
@@ -203,7 +205,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
                                       (ast_node.lineno, ast_node.col_offset))
 
                 for key, val in ast.iter_fields(ast_node):
-                    add_node(val, node_item, key)
+                    add_node(val, node_item, key, path + '.' + key)
 
             elif isinstance(ast_node, (list, tuple)):
                 value_str = ''
@@ -212,7 +214,9 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
                                   self.icon_factory.getIcon(IconFactory.LIST_NODE))
 
                 for idx, elem in enumerate(ast_node):
-                    add_node(elem, node_item, "{}[{:d}]".format(field_label, idx))
+                    add_node(elem, node_item,
+                             "{}[{:d}]".format(field_label, idx),
+                             "{}[{:d}]".format(path, idx))
             else:
                 value_str = repr(ast_node)
                 node_str = "{} = {}".format(field_label, value_str)
@@ -220,11 +224,13 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
                                   self.icon_factory.getIcon(IconFactory.PY_NODE))
 
             node_item.setText(SyntaxTreeWidget.COL_NODE, node_str)
+            node_item.setText(SyntaxTreeWidget.COL_PATH, path[1:]) # strip leading point
             node_item.setText(SyntaxTreeWidget.COL_FIELD, field_label)
             node_item.setText(SyntaxTreeWidget.COL_CLASS, class_name(ast_node))
             node_item.setText(SyntaxTreeWidget.COL_VALUE, value_str)
 
-            node_item.setToolTip(SyntaxTreeWidget.COL_NODE, node_str)
+            node_item.setToolTip(SyntaxTreeWidget.COL_NODE, "{} = {}".format(path[1:], value_str))
+            node_item.setToolTip(SyntaxTreeWidget.COL_PATH, path[1:]) # strip leading point
             node_item.setToolTip(SyntaxTreeWidget.COL_FIELD, field_label)
             node_item.setToolTip(SyntaxTreeWidget.COL_CLASS, class_name(ast_node))
             node_item.setToolTip(SyntaxTreeWidget.COL_VALUE, value_str)
@@ -236,7 +242,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
 
         # End of helper function
 
-        root_item = add_node(syntax_tree, self, root_label)
+        root_item = add_node(syntax_tree, self, root_label, '')
         root_item.setToolTip(SyntaxTreeWidget.COL_NODE, os.path.realpath(root_label))
 
         self._populate_highlighting_pass_1(self.invisibleRootItem(), last_pos)
