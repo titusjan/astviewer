@@ -151,8 +151,6 @@ class AstViewer(QtWidgets.QMainWindow):
         """
         logger.debug("Cleaning up resources.")
 
-        self.ast_tree.currentItemChanged.disconnect(self.highlight_node)
-
 
     def close_file(self):
         """ Clears the widgets
