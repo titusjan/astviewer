@@ -1,3 +1,8 @@
+2018-10-07, Version 1.1.2
+
+*   Works with PySide2
+
+
 2016-11-05, Version 1.1.1
 
 *   Source code is shown in a dock-widget.
