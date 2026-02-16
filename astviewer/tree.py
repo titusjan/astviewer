@@ -134,6 +134,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
     def select_node(self, line_nr, column_nr):
         """ Selects the node given a line and column number.
         """
+        logger.debug("Selecting node at line {} and column {}".format(line_nr, column_nr))
         found_item = self.find_item(self.invisibleRootItem(), (line_nr, column_nr))
         self.setCurrentItem(found_item) # Unselects if found_item is None
 
@@ -156,7 +157,13 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         """
         check_class(position, tuple)
         item_pos = tree_item.data(SyntaxTreeWidget.COL_POS, ROLE_POS)
-        item_start_pos = tuple(tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS))
+        data = tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS)
+        if data is None:
+            logger.warning("No data at: (col={}, start-pos={})".
+                format(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_START_POS))
+            return None
+
+        item_start_pos = tuple(data)
         item_end_pos = tuple(tree_item.data(SyntaxTreeWidget.COL_HIGHLIGHT, ROLE_END_POS))
 
         # See if one of the children matches
