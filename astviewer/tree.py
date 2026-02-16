@@ -7,7 +7,7 @@ import os.path
 
 from astviewer.iconfactory import IconFactory
 from astviewer.misc import class_name, check_class
-from astviewer.qtpy import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 from astviewer.toggle_column_mixin import ToggleColumnTreeWidget
 from astviewer.version import DEBUGGING
 
@@ -112,7 +112,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         return size
 
 
-    @QtCore.Slot()
+    @QtCore.pyqtSlot()
     def expand_reset(self, tree_item=None):
         """ Expands/collapses all nodes as they were at program start up.
         """
@@ -130,7 +130,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
             self.expand_reset(tree_item.child(childIdx))
 
 
-    @QtCore.Slot(int, int)
+    @QtCore.pyqtSlot(int, int)
     def select_node(self, line_nr, column_nr):
         """ Selects the node given a line and column number.
         """
@@ -298,7 +298,7 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         return last_pos
 
 
-    @QtCore.Slot()
+    @QtCore.pyqtSlot()
     def _populate_highlighting_pass_2(self, tree_item, parent_start_pos=None, parent_end_pos=None):
         """ Fill in the nodes that don't have a highlighting from their parent
         """

@@ -4,8 +4,8 @@ from __future__ import print_function
 
 import logging
 
-from astviewer.qtpy import QtCore, QtWidgets
-from astviewer.qtpy.QtCore import Qt
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import Qt
 from astviewer.misc import get_qsettings
 
 logger = logging.getLogger(__name__)

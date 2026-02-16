@@ -324,7 +324,7 @@ ignore-mixin-members=yes
 # and thus existing member attributes cannot be deduced by static analysis. It
 # supports qualified module names, as well as Unix pattern matching.
 ignored-modules=sip, zmq,
-    astviewer.qtpy.QtCore, astviewer.qtpy.QtGui, astviewer.qtpy.QtWidgets,  astviewer.qtpy.QtSvg
+    PyQt5.QtCore, PyQt5.QtGui, PyQt5.QtWidgets,  PyQt5.QtSvg
 
 # List of class names for which member attributes should not be checked (useful
 # for classes with dynamically set attributes). This supports the use of

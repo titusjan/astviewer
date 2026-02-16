@@ -5,7 +5,7 @@
 from __future__ import print_function
 import logging, os
 
-from astviewer.qtpy import QtCore, QtGui, QtSvg
+from PyQt5 import QtCore, QtGui, QtSvg
 from astviewer.misc import program_directory, log_dictionary
 from astviewer.version import DEBUGGING
 

@@ -2,22 +2,15 @@
 """
 import logging, sys, traceback
 import os.path
-import astviewer.qtpy
-import astviewer.qtpy._version as qtpy_version
+import PyQt5
+
 
 from astviewer.version import DEBUGGING, PROGRAM_NAME, PROGRAM_VERSION, PYTHON_VERSION
-from astviewer.qtpy import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 
 logger=logging.getLogger(__name__)
 
-QT_API = astviewer.qtpy.API
-QT_API_NAME = astviewer.qtpy.API_NAME
-QTPY_VERSION = '.'.join(map(str, qtpy_version.version_info))
-
-ABOUT_MESSAGE = ("{}: {}\n\nPython: {}\n{} (api={})"
-                 .format(PROGRAM_NAME, PROGRAM_VERSION, PYTHON_VERSION, QT_API_NAME, QT_API))
-
-
+ABOUT_MESSAGE = ("{}: {}\n\nPython: {}\n".format(PROGRAM_NAME, PROGRAM_VERSION, PYTHON_VERSION))
 
 def program_directory():
     """ Returns the program directory where this program is installed

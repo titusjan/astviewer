@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import logging, sys
 
-from astviewer.qtpy import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class SourceEditor(QtWidgets.QPlainTextEdit):
     """ Source read-ony editor that can detect double clicks.
     """
-    sigTextClicked = QtCore.Signal(int, int)
+    sigTextClicked = QtCore.pyqtSignal(int, int)
     
     def __init__(self, parent=None):
         """ Constructor

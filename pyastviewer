@@ -4,17 +4,13 @@ Program that shows the program on the right and its abstract syntax tree (ast) o
 """
 from __future__ import print_function
 
-import os
-#os.environ.setdefault('QT_API', 'pyside')
-#os.environ.setdefault('QT_API', 'pyqt5')
-
 import sys, argparse, logging
 
 
-from astviewer.qtpy import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 
 from astviewer.misc import logging_basic_config, handleException
-from astviewer.misc import PROGRAM_NAME, PROGRAM_VERSION, PYTHON_VERSION, QT_API_NAME, QT_API
+from astviewer.misc import PROGRAM_NAME, PROGRAM_VERSION, PYTHON_VERSION
 from astviewer.main import view
 
 logger = logging.getLogger(__name__)
@@ -54,7 +50,7 @@ def main():
         sys.exit(0)
 
     logger.info('Started {} {}'.format(PROGRAM_NAME, PROGRAM_VERSION))
-    logger.info('Using Python {} and {} (api={})'.format(PYTHON_VERSION, QT_API_NAME, QT_API))
+    logger.info('Using Python {}'.format(PYTHON_VERSION))
 
     try:
         QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)

@@ -7,7 +7,7 @@ import sys, logging, ast, traceback
 
 from astviewer.misc import get_qapplication_instance, get_qsettings, ABOUT_MESSAGE
 from astviewer.editor import SourceEditor
-from astviewer.qtpy import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 from astviewer.version import PROGRAM_NAME, DEBUGGING
 
 from astviewer.tree import SyntaxTreeWidget
@@ -246,7 +246,7 @@ class AstViewer(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.warning(self, 'error', msg)
 
 
-    @QtCore.Slot(QtWidgets.QTreeWidgetItem, QtWidgets.QTreeWidgetItem)
+    @QtCore.pyqtSlot(QtWidgets.QTreeWidgetItem, QtWidgets.QTreeWidgetItem)
     def highlight_node(self, current_item, _previous_item):
         """ Highlights the node if it has line:col information.
         """
