@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Program that shows the program on the right and its abstract syntax tree (ast) on the left.
 """
