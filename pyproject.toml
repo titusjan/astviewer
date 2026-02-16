@@ -1,7 +1,7 @@
 
-[build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+#[build-system]
+#requires = ["setuptools"]
+#build-backend = "setuptools.build_meta"
 
 
 [project]
@@ -15,7 +15,7 @@ license-files = ["LICENSE"]
 authors = [
     {name = "Pepijn Kenter", email = "titusjan@gmail.com"},
 ]
-keywords = ["AST", "Abstract Syntax Tree", "GUI"], 
+keywords = ["AST", "Abstract Syntax Tree", "GUI"]
 classifiers=[
     'Development Status :: 5 - Production/Stable',
     'Environment :: X11 Applications :: Qt',
@@ -33,10 +33,21 @@ classifiers=[
 
 
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "pyqt5>=5.15.11",
+]
 
 [project.urls]
 homepage = "https://github.com/titusjan/astviewer"
 documentation = "https://github.com/titusjan/astviewer"  # No read-the-docs yet.
 repository = "https://github.com/titusjan/astviewer.git"
 changelog = "https://github.com/titusjan/astviewer/blob/master/HISTORY.rst"
+
+
+[tool.uv]
+
+required-environments = [
+    "sys_platform == 'win32'",
+    "sys_platform == 'linux'",
+    "sys_platform == 'darwin'"
+]

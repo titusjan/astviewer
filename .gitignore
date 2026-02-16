@@ -4,3 +4,5 @@ build
 test_progs
 MANIFEST
 dist
+.idea/
+*.pyc
