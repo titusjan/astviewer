@@ -32,7 +32,7 @@ classifiers=[
 ]
 
 
-requires-python = ">=3.13"
+requires-python = ">=3.8"
 dependencies = [
     "pyqt5>=5.15.11",
 ]
@@ -54,7 +54,7 @@ required-environments = [
 
 
 [build-system]
-requires = ["uv_build>=0.9.5,<0.10.0"]
+requires = ["uv_build"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
