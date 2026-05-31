@@ -61,8 +61,8 @@ def main():
 
     exit_code = view(file_name = args.file_name, mode = args.mode, reset = args.reset)
     logging.info('Done {}'.format(PROGRAM_NAME))
-    sys.exit(exit_code)
+    return exit_code
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

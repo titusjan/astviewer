@@ -36,6 +36,12 @@ dependencies = [
     "pyqt5>=5.15.11",
 ]
 
+[project.scripts]
+astviewer = "astviewer.__main__:main"
+
+[project.gui-scripts]
+astviewer-gui = "astviewer.__main__:main"
+
 [project.urls]
 homepage = "https://github.com/titusjan/astviewer"
 documentation = "https://github.com/titusjan/astviewer"  # No read-the-docs yet.
