@@ -20,7 +20,6 @@ classifiers=[
     'Development Status :: 5 - Production/Stable',
     'Environment :: X11 Applications :: Qt',
     'Intended Audience :: Developers',
-    'License :: OSI Approved :: MIT License',
     'Natural Language :: English',
     'Operating System :: MacOS :: MacOS X',
     'Operating System :: Microsoft :: Windows',
@@ -54,7 +53,7 @@ required-environments = [
 
 
 [build-system]
-requires = ["uv_build"]
+requires = ["uv_build<0.12"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]

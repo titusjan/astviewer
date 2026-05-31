@@ -1,9 +1,6 @@
 """ Program version information.
 """
 
-# IMPORTANT: this file is included in setup.py. Do not add 3rd party packages here, this
-# may break setup.py if users don't have the requirements installed!
-
 import sys
 
 DEBUGGING = False
