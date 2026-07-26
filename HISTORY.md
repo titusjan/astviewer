@@ -1,7 +1,7 @@
 # Change log
 
 
-## 2026-07-??, Version 1.1.4
+## 2026-07-26, Version 1.1.4
 
 * Right context menu action that copies the node path to clipboard (issue #2)
 
