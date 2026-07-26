@@ -102,6 +102,9 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         self.row_size_hint.setHeight(20)
         self.setIconSize(QtCore.QSize(20, 20))
 
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self._show_item_context_menu)
+
 
     def sizeHint(self):
         """ The recommended size for the widget.
@@ -137,6 +140,31 @@ class SyntaxTreeWidget(ToggleColumnTreeWidget):
         logger.debug("Selecting node at line {} and column {}".format(line_nr, column_nr))
         found_item = self.find_item(self.invisibleRootItem(), (line_nr, column_nr))
         self.setCurrentItem(found_item) # Unselects if found_item is None
+
+
+    def _show_item_context_menu(self, pos):
+        """ Shows a context menu for the item at position pos with actions that apply to it.
+        """
+        item = self.itemAt(pos)
+        if item is None:
+            logger.debug("No item at position {}".format(pos))
+            return
+
+        menu = QtWidgets.QMenu(self)
+        copy_action = menu.addAction("Copy path to clipboard")
+
+        action = menu.exec_(self.viewport().mapToGlobal(pos))
+        if action == copy_action:
+            node_path = self._get_node_path(item)
+            QtWidgets.QApplication.clipboard().setText(node_path)
+            logger.info("Copied node path to clipboard: {}".format(node_path))
+
+
+    def _get_node_path(self, tree_item):
+        """ Returns the path (e.g. 'body[0].value.s') of tree_item, as shown in the Path column.
+        """
+        node_path = tree_item.text(SyntaxTreeWidget.COL_PATH)
+        return node_path
 
 
     def get_item_span(self, tree_item):

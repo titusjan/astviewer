@@ -1,5 +1,10 @@
 # Change log
 
+
+## 2026-07-??, Version 1.1.4
+
+* Right context menu action that copies the node path to clipboard (issue #2)
+
 ## 2026-05-31, Version 1.1.3
 
 * Replaced setup.py with modern pyproject.toml file.
